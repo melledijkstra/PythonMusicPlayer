@@ -1,13 +1,20 @@
 import os
-from config import allowed_extensions
+from config import *
 import pygame
 import time
 
+pygame.init()
+pygame.mixer.init()
 
-class MusicManager:
+
+class MusicPlayer:
     """ This class can play music with the pygame library
         it keeps track of which file it is playing and has play, pause, etc. controls
+        Also it has a list of files it can play
     """
+    # format musiclist[0] = {"name": "Best Music by Someone", "file": "C:/path/to/file.mp3"}
+    _musiclist = []
+    # This variable keeps status if music is playing or not
     _isPlaying = False
 
     def __init__(self):
@@ -16,17 +23,51 @@ class MusicManager:
     def isPlaying(self):
         return self._isPlaying
 
+    def getMusicList(self):
+        return self._musiclist
 
-class FileManager:
-    """ This class keeps track of music stored in folders and files
-    """
-    # format musiclist[0] = {"name": "Best Music by Someone", "file": "C:/path/to/file.mp3"}
-    _musiclist = []
+    def process_command(self, cmdlist):
+        """ This command processes commands for the music player
+            Like:
+                play<separator>3 // where 3 is song id
+                pause
+                stop
+            :param: cmd The command for processing
+            :type: str
+        """
+        # Response string
+        response = commands.PLAYER + CMD_SEPERATOR
+        if cmdlist[1] == "PLAY":
+            try:
+                songid = int(cmdlist[2])
+                song = self._musiclist[songid]
+                print("Trying to play '" + song['name'] + "' with id: " + str(songid))
+                pygame.mixer.music.load(song['file'])
+                pygame.mixer.music.play()
+                while pygame.mixer.music.get_busy():
+                    # keep playing music
+                    print("PLAYING " + song['name'])
+                    time.sleep(1)
+                    pass
+            except IndexError as e:
+                response += str(e)
+        elif cmdlist[1] == "PAUSE":
+            if pygame.mixer.get_busy():
+                pygame.mixer.pause()
+                # TODO: Set a constant for "OK" command, so you only have to change it at 1 place if necessary
+                response += "OK"
+            else:
+                pygame.mixer.unpause()
+                response += "OK"
+        elif cmdlist[1] == "STOP":
+            pygame.mixer.stop()
+            response += "OK"
+        else:
+            response += commands.INVALID
+        # send the builded response back
+        return response
 
-    def __init__(self):
-        pass
-
-    def musiclistfromfolder(self, rootdir):
+    def musicListFromFolder(self, rootdir):
         """ Sets internal musiclist of FileManager instance, and returns that list with music names in the directory specified.
             currently searches for ".mp3", ".wav"
 
@@ -50,30 +91,18 @@ class FileManager:
         else:
             raise IOError("Folder '" + rootdir + "' does not exist!")
 
-    def getMusicList(self):
-        return self._musiclist
-
 
 if __name__ == '__main__':
-    filemanager = FileManager()
-    somelist = filemanager.musiclistfromfolder("music")
-    for music in somelist:
-        print(music["file"])
-    pass
-    # pygame.mixer.init()
-    # mplayer = pygame.mixer.music
-    # mplayer.load("music/krtheme.wav")
-    # mplayer.play()
-    # p = True
-    # while mplayer.get_busy():
-    #     print(time.ctime())
-    #     time.sleep(1)
-    #     if p:
-    #         mplayer.pause()
-    #         p = False
-    #     else:
-    #         mplayer.unpause()
-    #         p = True
+    pygame.init()
+    pygame.mixer.init()
+    print "settings: ", pygame.mixer.get_init()
+    print "channels: ", pygame.mixer.get_num_channels()
+    pygame.mixer.music.set_volume(1.0)
+    song = pygame.mixer.music.load("music/krtheme.wav")
+    pygame.mixer.music.play()
+    while pygame.mixer.music.get_busy():
+        print("PLAYING "+"music/krtheme.wav")
+        time.sleep(1)
     #
     # try:
     #     musiclistfromfolder("music")

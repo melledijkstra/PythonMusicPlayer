@@ -1,12 +1,12 @@
 import socket
 
-from Managers import FileManager
-from config import commands
+from Managers import MusicPlayer
+from config import *
 from tools import colors
 
 HOST, PORT = socket.gethostname(), 1010
 server = socket.socket()
-filemanager = FileManager()
+musicplayer = MusicPlayer()
 
 
 #   ////    ///////   ///////     //         //  ///////    ///////
@@ -38,13 +38,18 @@ def create_server():
 ############################################################################
 
 def process_command(cmd):
-    print(colors.ENDC + "Command: " + colors.OKBLUE + bytes(cmd).decode() + " " + colors.ENDC)
+    cmd = cmd.upper()
+    print(colors.ENDC + "Command: " + colors.OKBLUE + bytes(cmd).decode() + colors.ENDC)
+
+    cmdlist = cmd.split(CMD_SEPERATOR)
+
+    print(cmdlist)
 
     # LIST command for getting list of songs
-    if cmd == commands.LIST:
+    if cmdlist[0] == commands.LIST:
         # Get list of files
         try:
-            songlist = filemanager.musiclistfromfolder("music")
+            songlist = musicplayer.musicListFromFolder("music")
             tmplist = []
             for musicitem in songlist:
                 tmplist.append(musicitem["name"])
@@ -52,20 +57,26 @@ def process_command(cmd):
         except IOError as e:
             print("IOError: " + str(e))
             response = "error " + e.message
+    elif cmdlist[0] == commands.PLAYER:
+        if len(cmdlist) > 1:
+            response = musicplayer.process_command(cmdlist)
+        else:
+            response = commands.INVALID
     # OPTIONS for a list of options
-    elif cmd == commands.OPTIONS:
+    elif cmdlist[0] == commands.OPTIONS:
         commandlist = []
         for command in vars(commands).itervalues():
             command = str(command)
             if command.isupper():
                 commandlist.append(command)
-        response = ','.join(commandlist)
+        response = CMD_SEPERATOR.join(commandlist)
     else:
         response = "INVALID_COMMAND"
 
+    # every communication should be uppercase
+    response = response.upper()
     print("RESPONSE: " + response)
-
-    return response + "\n"
+    return response.upper() + "\n"
 
 
 ############################################################################
@@ -87,9 +98,12 @@ def conversation(conn):
 
             if "\n" in cmd:
                 cmd = cmd.replace("\n", "")
+
             cmd = cmd.upper()
 
             response = process_command(cmd)
+            # send response uppercase, because the whole communication is uppercase
+            response = response.upper()
             conn.send(response.encode())
 
         except socket.error as msg:
@@ -98,7 +112,7 @@ def conversation(conn):
         except Exception as msg:
             print(colors.ENDC + "Something went wrong " + str(msg))
             main()
-    print("Connection closed, wait for connections again")
+    print(colors.FAIL + "Connection closed, wait for connections again..." + colors.ENDC)
     conn = accept_connection()
     conversation(conn)
 
@@ -111,5 +125,8 @@ def main():
 
 # Start main program
 if __name__ == '__main__':
-    # print(process_command("OPTIONS"))
-    main()
+    cmd = ""
+    while cmd != "q":
+        cmd = raw_input("Type command: ")
+        process_command(cmd)
+        # main()
