@@ -1,5 +1,7 @@
+HOST = ''
+PORT = 1010
+
 allowed_extensions = (".mp3", ".wav")
-CMD_SEPERATOR = "."
 
 
 class commands:

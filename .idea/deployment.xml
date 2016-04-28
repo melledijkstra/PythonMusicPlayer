@@ -5,7 +5,7 @@
       <paths name="RaspberryPi">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/pi/python" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/home/pi/python/musicplayer" local="$PROJECT_DIR$" web="/" />
           </mappings>
         </serverdata>
       </paths>
