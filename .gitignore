@@ -1,2 +1,6 @@
+.idea
+
 /client.py
-/music
+/music/*
+vlc-example.py
+testing.py
