@@ -1,7 +1,9 @@
 HOST = ''
 PORT = 1010
 
-allowed_extensions = (".mp3", ".wav")
+MUSIC_DIR = "music"
+
+allowed_extensions = ("mp3", "wav")
 
 
 class commands:

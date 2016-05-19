@@ -3,6 +3,7 @@ import socket
 import threading
 import Queue
 import json
+import glob
 import os
 import time
 import vlc
@@ -10,12 +11,6 @@ import tools
 
 from config import *
 from tools import colors as c
-
-v = vlc.Instance()
-
-server = socket.socket()
-conn = None
-lock = threading.Lock()
 
 
 class UpdateSongInfoThread(threading.Thread):
@@ -46,11 +41,12 @@ class MusicPlayer:
         it keeps track of which file it is playing and has play, pause, etc. controls
         Also it has a list of files it can play
     """
+    # TODO: remove states if not used
     IDLE = 0
     PLAYING = 1
     PAUSED = 2
 
-    _musiclist = []
+    _albums = []
 
     # This variable keeps status if music is playing or not
     _current_song = None
@@ -59,10 +55,8 @@ class MusicPlayer:
     updateSongInfoThread = None
 
     def __init__(self):
-        self.music_list_form_folder('music')
         self._player = v.media_player_new()
-        self._player.audio_set_volume(70)
-        self.updateSongInfoThread = UpdateSongInfoThread(self._player)
+        self._player.audio_set_volume(80)
 
     def getmusiclist(self):
         return self._musiclist
@@ -99,7 +93,42 @@ class MusicPlayer:
             return_dict["exception"] = str(e)
         return return_dict
 
-    def music_list_form_folder(self, rootdir):
+    def get_albums_and_songs(self, rootdir):
+        """ Get albums and song from a specific folder and generates a dictionary from it
+
+        :param rootdir:
+        :return:
+        """
+        albums = self.album_list_from_folder(rootdir)
+        for album in albums:
+            album["songlist"] = self.music_list_from_folder(album["location"])
+            print(album)
+        return albums
+
+    def album_list_from_folder(self, rootdir):
+        """ Generates a list of albums from specific directory
+            every folder in the specified directory counts a an album.
+            A list with dictionaries like this will be returned:
+            Example:
+            [ {'name': "House", 'location': "/music/House", song_count: 13},
+            {name': "Rap", 'location': "/music/rap"} ]
+
+        :param rootdir:
+        :return list:
+        """
+        albums = []
+        if os.path.isdir(rootdir):
+            for selfdir, subdirs, files in os.walk(rootdir):
+                album = {'name': selfdir.split("\\")[-1], 'location': selfdir}
+                song_count = 0
+                for extension in allowed_extensions:
+                    song_count += len(glob.glob1(selfdir, "*." + extension))
+                album["song_count"] = song_count
+                albums.append(album)
+        self._albums = albums
+        return albums
+
+    def music_list_from_folder_recursive(self, rootdir):
         """ Sets internal musiclist of FileManager instance, and returns that list with music names in the directory specified.
             currently searches for ".mp3", ".wav"
 
@@ -118,7 +147,6 @@ class MusicPlayer:
                     if musicfile.endswith(allowed_extensions):
                         musiclist.append({"name": os.path.splitext(musicfile)[0], "file": subdir + "\\" + musicfile})
             # update instance musiclist and also return it
-            self._musiclist = musiclist
             return musiclist
         else:
             raise IOError("Folder '" + rootdir + "' does not exist!")
@@ -156,6 +184,8 @@ class MusicPlayer:
     def change_pos(self, pos):
         # TODO: change position of song and send update
         self._player.set_time(tools.constrain(pos, 0, self._player.get_media().get_duration()))
+        if not self._player.is_playing():
+            self._player.play()
 
     def pause(self):
         if self._player.is_playing():
@@ -169,6 +199,37 @@ class MusicPlayer:
     def stop(self):
         self._player.stop()
         self._current_song = None
+
+    def music_list_from_folder(self, rootdir):
+        """ returns a list with music names in the directory specified.
+            see allowed_extensions in config file for allowed extensions
+
+            Returns a list with dictionaries
+            like so: musiclist[{"name":"Best Music by someone","file":"path/to/file.mp3"}]
+
+            :param rootdir: Folder to search for music files
+            :type rootdir: str
+            :return: The list with all music names in the specified folder
+            :rtype: list
+        """
+        musiclist = []
+        if os.path.isdir(rootdir):
+            for musicfile in os.listdir(rootdir):
+                if musicfile.endswith(allowed_extensions):
+                    musiclist.append({"name": os.path.splitext(musicfile)[0], "file": rootdir + "\\" + musicfile})
+            # update instance musiclist and also return it
+            return musiclist
+        else:
+            raise IOError("Folder '" + rootdir + "' does not exist!")
+
+
+v = vlc.Instance()
+
+server = socket.socket()
+conn = None
+lock = threading.Lock()
+
+musicplayer = MusicPlayer()
 
 
 # ////    ///////   ///////     //         //  ///////    ///////
@@ -220,16 +281,9 @@ def process_json(raw_json):
         try:
             data["cmd"] = data["cmd"].upper()
             if data["cmd"] == commands.LIST:
-                # Get list of files
-                try:
-                    songlist = musicplayer.music_list_form_folder("music")
-                    return_dict["songlist"] = []
-                    for song in songlist:
-                        return_dict["songlist"].append(song["name"])
-                except IOError as e:
-                    print("IOError: " + str(e))
-                    return_dict["result"] = "error"
-                    return_dict["exception"] = str(e)
+                # get list of everything
+                return_dict["albums"] = musicplayer.get_albums_and_songs(MUSIC_DIR)
+                print(return_dict)
             elif data["cmd"] == commands.PLAYER:
                 try:
                     musicplayer.process_json(data["mplayer"])
@@ -336,6 +390,8 @@ def is_connected():
 
 
 def main():
+    print(musicplayer.get_albums_and_songs(MUSIC_DIR))
+    exit()
     create_server()
     while True:
         global conn
@@ -345,5 +401,4 @@ def main():
 
 # Start main program
 if __name__ == '__main__':
-    musicplayer = MusicPlayer()
     main()

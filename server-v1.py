@@ -57,7 +57,7 @@ class MusicPlayer:
                 song = self._musiclist[songid]
                 print("Trying to play '" + song['name'] + "' with id: " + str(songid))
                 self.current_song = mixer.Sound(song["file"].replace("\\", "/"))
-                print("length: "+self.current_song.get_length())
+                print("length: " + self.current_song.get_length())
                 self.current_song.play()
                 self._isPlaying = True
                 # TODO: put this in main thread and use Queue to also receive messages in new thread
@@ -105,7 +105,8 @@ class MusicPlayer:
         if os.path.isdir(rootdir):
             for subdir, dirs, files in os.walk(rootdir):
                 for musicfile in files:
-                    if musicfile.endswith(allowed_extensions):
+                    # prepend a dot before extension in allowed_extensions
+                    if musicfile.endswith(["." + extension for extension in allowed_extensions]):
                         musiclist.append({"name": os.path.splitext(musicfile)[0], "file": subdir + "\\" + musicfile})
             # update instance musiclist and also return it
             self._musiclist = musiclist
