@@ -390,8 +390,6 @@ def is_connected():
 
 
 def main():
-    print(musicplayer.get_albums_and_songs(MUSIC_DIR))
-    exit()
     create_server()
     while True:
         global conn
