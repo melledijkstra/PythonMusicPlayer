@@ -127,7 +127,7 @@ def accept_connection():
     # wait for connection
     print("Waiting for connection...")
     conn, addr = server.accept()
-    print("Connection established | IP " + c.OKBLUE + addr[0] + c.ENDC + " | Port: " + str(addr[1]))
+    print("Connection established | IP " + c.OKBLUE + addr[0] + c.CLEAR + " | Port: " + str(addr[1]))
     return conn
 
 
@@ -140,7 +140,7 @@ def create_server():
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((HOST, PORT))
     except Exception as msg:
-        print(c.FAIL + "Bind failed: " + str(msg) + c.ENDC)
+        print(c.FAIL + "Bind failed: " + str(msg) + c.CLEAR)
     server.listen(5)
 
 
@@ -159,7 +159,7 @@ def process_json(raw_json):
     return_dict = {}
     try:
         data = json.loads(raw_json)
-        print(c.ENDC + "JSON Data: " + c.OKBLUE + str(data) + c.ENDC)
+        print(c.CLEAR + "JSON Data: " + c.OKBLUE + str(data) + c.CLEAR)
 
         # LIST command for getting list of songs
         try:
@@ -200,7 +200,7 @@ def process_json(raw_json):
             pass
 
     except ValueError as e:
-        print(c.FAIL + "incoming data not valid JSON: " + raw_json + c.ENDC)
+        print(c.FAIL + "incoming data not valid JSON: " + raw_json + c.CLEAR)
         print(str(e))
         return_dict["result"] = "error"
         return_dict["exception"] = str(e)
@@ -240,7 +240,7 @@ class ReceiveMessagesThread(threading.Thread):
                     print("received: " + line)
                     self.queue.put(line)
             except socket.error as msg:
-                print(c.ENDC + "something went wrong: " + str(msg))
+                print(c.CLEAR + "something went wrong: " + str(msg))
                 conn = accept_connection()
                 # if no data is present then socket is closed
         print("Client closed socket")
@@ -265,13 +265,13 @@ def conversation():
                 print("Response: " + response)
                 conn.sendall(response + "\n")
         except socket.error as msg:
-            print(c.ENDC + "something went wrong: " + str(msg))
+            print(c.CLEAR + "something went wrong: " + str(msg))
             conn = accept_connection()
             conversation()
         except Exception as msg:
-            print(c.ENDC + "Something went wrong " + str(msg))
+            print(c.CLEAR + "Something went wrong " + str(msg))
             main()
-    print(c.FAIL + "Connection closed, wait for connections again..." + c.ENDC)
+    print(c.FAIL + "Connection closed, wait for connections again..." + c.CLEAR)
     conn = accept_connection()
     conversation()
 

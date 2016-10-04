@@ -6,11 +6,19 @@ import json
 import glob
 import os
 import time
+
+import sys
 import vlc
 import tools
 
 from config import *
 from tools import colors as c
+
+v = vlc.Instance()
+
+server = socket.socket()
+conn = None
+lock = threading.Lock()
 
 
 class UpdateSongInfoThread(threading.Thread):
@@ -25,12 +33,12 @@ class UpdateSongInfoThread(threading.Thread):
         while self._player.get_time() == 0:
             pass
         while self._player.is_playing():
-            song_info["cur_pos"] = self._player.get_time()
-            song_info["cur_vol"] = self._player.audio_get_volume()
+            song_info['cur_pos'] = self._player.get_time()
+            song_info['cur_vol'] = self._player.audio_get_volume()
             try:
                 conn.sendall(json.dumps(song_info) + "\n")
             except IOError as e:
-                print("Error with sending updates: " + str(e))
+                print("Error with sending updates: ", e)
                 break
             time.sleep(0.1)
         print("Stopped sending updates")
@@ -61,38 +69,6 @@ class MusicPlayer:
     def getmusiclist(self):
         return self._musiclist
 
-    def process_json(self, data):
-        """ This command processes commands for the music player
-
-            :param data: The command for processing
-            :type data: dict
-        """
-        # TODO: Clean up this function
-        # Response dictionary
-        return_dict = {"result": "ok"}
-        try:
-            if data["cmd"] == "play":
-                try:
-                    self.play(int(data["song_id"]))
-                except Exception as e:
-                    print("Exception: " + str(e))
-                    return_dict["result"] = "error"
-                    return_dict["exception"] = str(e)
-            elif data["cmd"] == "pause":
-                # TODO: create pausing functionality
-                self.pause()
-            elif data["cmd"] == "changepos":
-                self.change_pos(int(data["pos"]))
-            elif data["cmd"] == "changevol":
-                self.change_vol(data["vol"])
-        except IndexError as e:
-            return_dict["result"] = "error"
-            return_dict["exception"] = "invalid index " + str(e)
-        except Exception as e:
-            return_dict["result"] = "error"
-            return_dict["exception"] = str(e)
-        return return_dict
-
     def get_albums_and_songs(self, rootdir):
         """ Get albums and song from a specific folder and generates a dictionary from it
 
@@ -101,11 +77,11 @@ class MusicPlayer:
         """
         albums = self.album_list_from_folder(rootdir)
         for album in albums:
-            album["songlist"] = self.music_list_from_folder(album["location"])
+            album['songlist'] = self.music_list_from_folder(album['location'])
             print(album)
         return albums
 
-    def album_list_from_folder(self, rootdir):
+    def album_list_from_folder(self, rootname):
         """ Generates a list of albums from specific directory
             every folder in the specified directory counts a an album.
             A list with dictionaries like this will be returned:
@@ -113,18 +89,20 @@ class MusicPlayer:
             [ {'name': "House", 'location': "/music/House", song_count: 13},
             {name': "Rap", 'location': "/music/rap"} ]
 
-        :param rootdir:
+        :param rootname:
         :return list:
         """
         albums = []
-        if os.path.isdir(rootdir):
-            for selfdir, subdirs, files in os.walk(rootdir):
+
+        if os.path.isdir(rootname):
+            for selfdir, subdirs, files in os.walk(rootname):
                 album = {'name': selfdir.split("\\")[-1], 'location': selfdir}
                 song_count = 0
                 for extension in allowed_extensions:
                     song_count += len(glob.glob1(selfdir, "*." + extension))
-                album["song_count"] = song_count
+                album['song_count'] = song_count
                 albums.append(album)
+
         self._albums = albums
         return albums
 
@@ -153,8 +131,10 @@ class MusicPlayer:
 
     def play(self, song_id):
         song = self._musiclist[song_id]
-        print("Trying to play " + c.OKGREEN + song['name'] + c.ENDC + " with id: " + c.OKGREEN + str(song_id) + c.ENDC)
-        self._current_song = v.media_new(song["file"].encode('utf-8', 'replace'))
+        print(
+            "Trying to play " + c.OKGREEN + song['name'] + c.CLEAR + " with id: " + c.OKGREEN + str(song_id) + c.CLEAR
+        )
+        self._current_song = v.media_new(song['file'].encode('utf-8', 'replace'))
         self._current_song.parse()
         print("\tDuration: " + str(self._current_song.get_duration()))
         self._player.set_media(self._current_song)
@@ -168,6 +148,11 @@ class MusicPlayer:
         self.updateSongInfoThread.start()
 
     def change_vol(self, vol):
+        """
+        Change the volume of the musicplayer
+        :param float vol:
+        :return:
+        """
         # TODO: send confirmation that volume changed
         if type(vol) is int:
             new_vol = tools.constrain(vol, 0, 100)
@@ -222,13 +207,28 @@ class MusicPlayer:
         else:
             raise IOError("Folder '" + rootdir + "' does not exist!")
 
+    def music_list_from_album(self, albumid):
+        # TODO create this functionality. A song list from an album should be generated
+        if len(self._albums) > albumid >= 0:
+            return self.music_list_from_folder(self._albums[albumid]['location'])
+        else:
+            raise IndexError('This album doesn\'t exists')
 
-v = vlc.Instance()
+    def init(self):
+        """ Initializing musicplayer, scanning directory for albums and song, etc. """
+        self._albums = self.album_list_from_folder(MUSIC_DIR)
 
-server = socket.socket()
-conn = None
-lock = threading.Lock()
+    def get_album_by_id(self, albumid):
+        """
+        Get an album by ID
 
+        :param int albumid:
+        :return:
+        :rtype: dict
+        """
+        return self._albums[albumid] if len(self._albums) > albumid > 0 else False
+
+# set global musicplayer
 musicplayer = MusicPlayer()
 
 
@@ -244,77 +244,119 @@ def accept_connection():
     # wait for connection
     print("Waiting for connection...")
     conn, addr = server.accept()
-    print("Connection established | IP " + c.OKBLUE + addr[0] + c.ENDC + " | Port: " + str(addr[1]))
+    print("Connection established | IP " + c.OKBLUE + addr[0] + c.CLEAR + " | Port: " + str(addr[1]))
     return conn
 
 
 def create_server():
     try:
         print(
-            "Binding socket - HOST: " + (str(HOST) if str(HOST) is not "" else "0.0.0.0 (everyone)") + " PORT: " + str(
+            "Binding socket - HOST: " + (
+                str(HOST) if str(HOST) is not "" else "0.0.0.0 (listen to everyone)") + " PORT: " + str(
                 PORT))
         # bind to host and port then listen for connections
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((HOST, PORT))
     except Exception as msg:
-        print(c.FAIL + "Bind failed: " + str(msg) + c.ENDC)
+        print(c.FAIL + "Bind failed: " + str(msg) + c.CLEAR)
+        time.sleep(5)
+        create_server()
+    setup_server()
     server.listen(5)
+
+
+def setup_server():
+    musicplayer.init()
 
 
 ############################################################################
 # COMMAND PROCESSING
 ############################################################################
 
+def process_mplayer(_json):
+    """
+    This command processes commands for the music player
+
+        :param _json: The command for processing
+        :type _json: dict
+        :rtype: dict
+    """
+    # Response dictionary
+    return_dict = {"result": "ok"}
+    try:
+        if 'ctrl' in _json:
+            _ctrl = commands.mplayer.ctrl
+            if _json['ctrl']['cmd'] == _ctrl.PLAY and isinstance(_json['ctrl']['songid'], int):
+                try:
+                    musicplayer.play(_json['song_id'])
+                except Exception as e:
+                    print("Exception when trying to play a song: ", e)
+                    return_dict['result'] = "error"
+                    return_dict['message'] = str(e)
+            elif _json['ctrl']['cmd'] == _ctrl.PAUSE:
+                # TODO: create pausing functionality
+                musicplayer.pause()
+            elif _json['ctrl']['cmd'] == _ctrl.CHANGEPOS:
+                musicplayer.change_pos(int(_json['pos']))
+            elif _json['ctrl']['cmd'] == _ctrl.CHANGEVOL:
+                musicplayer.change_vol(float(_json['vol']))
+        elif 'data' in _json:
+            _data = commands.mplayer.data
+            if _json['data']['cmd'] == _data.LIST and 'type' in _json['data']:
+                if _json['data']['type'] == _data.ALBUM:
+                    return_dict['albumlist'] = musicplayer.album_list_from_folder(MUSIC_DIR)
+                if _json['data']['type'] == _data.SONG:
+                    if 'albumid' in _json['data'] and isinstance(_json['data']['albumid'], int):
+                        return_dict['album'] = musicplayer.get_album_by_id(_json['data']['albumid'])
+                        return_dict['songlist'] = musicplayer.music_list_from_album(_json['data']['albumid'])
+                    else:
+                        return_dict['songlist'] = musicplayer.music_list_from_folder_recursive(MUSIC_DIR)
+    except IndexError as e:
+        return_dict['result'] = "error"
+        return_dict['message'] = "invalid index " + str(e)
+    except Exception as e:
+        return_dict['result'] = "error"
+        return_dict['message'] = str(e)
+    return return_dict
+
+
+def process_youtube(data):
+    """This function processes the json relative to youtube functionality
+
+    :param data:
+    :type data: dict
+    :rtype: dict
+    """
+    # TODO: youtube_dl for downloading urls and put it in a specific folder specified by user
+    youtube = {"result": "ok"}
+    print("Downloading...")
+    return youtube
+
+
 def process_json(raw_json):
     """
     This function processes the raw JSON decodes it, acts on the command(s) given and returns a response.
     A basic response exists of a {"result": "OK"} string
+
     :param raw_json:
-    :return:
+    :type raw_json: str
+    :rtype: str
     """
-    global conn
     return_dict = {"result": "ok"}
     try:
         data = json.loads(raw_json)
-
-        # LIST command for getting list of songs
-        try:
-            data["cmd"] = data["cmd"].upper()
-            if data["cmd"] == commands.LIST:
-                # get list of everything
-                return_dict["albums"] = musicplayer.get_albums_and_songs(MUSIC_DIR)
-                print(return_dict)
-            elif data["cmd"] == commands.PLAYER:
-                try:
-                    musicplayer.process_json(data["mplayer"])
-                except IndexError as e:
-                    print("No mplayer field in JSON")
-                    return_dict["result"] = "error"
-                    return_dict["exception"] = str(e)
-            # OPTIONS for a list of options
-            elif data["cmd"] == commands.OPTIONS:
-                commandlist = []
-                for command in vars(commands).itervalues():
-                    command = str(command)
-                    if command.isupper():
-                        commandlist.append(command)
-                return_dict["options"] = commandlist
-            elif data["cmd"] == commands.PING:
-                return_dict["ping"] = "OK"
-            else:
-                return_dict["result"] = "INVALID_COMMAND"
-        except KeyError as e:
-            return_dict["result"] = "error"
-            return_dict["exception"] = str(e)
-            pass
+        if commands.PLAYER in data:
+            return_dict['mplayer'] = process_mplayer(data[commands.PLAYER])
+        if commands.YOUTUBE in data:
+            return_dict['youtube'] = process_youtube(data[commands.YOUTUBE])
 
     except ValueError as e:
-        print(c.FAIL + "incoming data not valid JSON: " + raw_json + c.ENDC)
+        print(c.FAIL + "incoming data not valid JSON: " + raw_json + c.CLEAR)
         print(str(e))
-        return_dict["result"] = "error"
-        return_dict["exception"] = str(e)
+        return_dict['result'] = "error"
+        return_dict['message'] = str(e)
 
-    return json.dumps(return_dict, encoding="latin1")
+    return json.dumps(return_dict, encoding="utf-8")
 
 
 ############################################################################
@@ -346,10 +388,11 @@ class ReceiveMessagesThread(threading.Thread):
 
                 while buf.find('\n') != -1:
                     line, buf = buf.split('\n', 1)
-                    print(c.ENDC + "Received: " + c.OKBLUE + line + c.ENDC)
+                    print(c.CLEAR + "Received: " + c.OKBLUE + line + c.CLEAR)
                     self.queue.put(line)
+                    time.sleep(0.1)
             except socket.error as msg:
-                print(c.ENDC + "something went wrong: " + str(msg))
+                print(c.CLEAR + "something went wrong: " + str(msg))
                 conn = accept_connection()
                 # if no data is present then socket is closed
         print("Client closed socket")
@@ -373,13 +416,13 @@ def conversation():
                 print("Response: " + response)
                 conn.sendall(response + "\n")
         except socket.error as msg:
-            print(c.ENDC + "something went wrong: " + str(msg))
+            print(c.CLEAR + "something went wrong: " + str(msg))
             conn = accept_connection()
             conversation()
         except Exception as msg:
-            print(c.ENDC + "Something went wrong " + str(msg))
+            print(c.CLEAR + "Something went wrong " + str(msg))
             main()
-    print(c.FAIL + "Connection closed, wait for connections again..." + c.ENDC)
+    print(c.FAIL + "Connection closed, wait for connections again..." + c.CLEAR)
     conn = accept_connection()
     conversation()
 
@@ -399,4 +442,7 @@ def main():
 
 # Start main program
 if __name__ == '__main__':
+    if hasattr(os, 'getuid') and not os.getuid() == 0:
+        sys.exit(
+            c.WARNING + "root priveleges needed, try restarting with this command: 'sudo python server-v2.py'" + c.CLEAR)
     main()

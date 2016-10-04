@@ -7,9 +7,23 @@ allowed_extensions = ("mp3", "wav")
 
 
 class commands:
-    INVALID = "INVALID_COMMAND"
-    PLAYER = "MPLAYER"
-    LIST = "LIST"
-    QUIT = "QUIT"
-    OPTIONS = "OPTIONS"
-    PING = "PING"
+    PLAYER = 'mplayer'
+    YOUTUBE = 'yt-dl'
+
+    class mplayer:
+        CTRL = 'ctrl'
+
+        class ctrl:
+            CHANGEVOL = "changevol"
+            CHANGEPOS = "changepos"
+            PLAY = 'play'
+            PAUSE = 'pause'
+            STOP = 'stop'
+
+        class data:
+            LIST = 'list'
+            ALBUM = 'album'
+            SONG = 'song'
+
+    class yt_dl:
+        DWNL = 'download'
