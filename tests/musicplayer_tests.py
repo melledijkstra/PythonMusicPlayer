@@ -1,16 +1,14 @@
 import unittest
-from musicplayer import *
-from ConfigParser import SafeConfigParser
+from mpserver.musicplayer import MusicPlayer
+from configparser import ConfigParser
 
 
 class MusicPlayerTests(unittest.TestCase):
     def setUp(self):
-        config = SafeConfigParser()
-        config.readfp(open('../config.ini'))
-        self.musicplayer = MusicServer(config)
+        config = ConfigParser()
+        config.read_file(open('../config.ini'))
+        self.musicplayer = MusicPlayer(config.items('musicplayer'))
 
-    def test_musicplayer(self):
-        self.assertTrue(True, "mmm...?")
 
 if __name__ == '__main__':
     unittest.main()

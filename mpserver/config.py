@@ -1,5 +1,4 @@
-allowed_extensions = ("mp3", "wav")
-
+DEBUG = 1
 
 class commands:
     PLAYER = 'mplayer'
@@ -11,8 +10,8 @@ class commands:
         class ctrl:
             CHANGEVOL = "changevol"
             CHANGEPOS = "changepos"
-            PLAY = 'play'
             PAUSE = 'pause'
+            PLAY = 'play'
             STOP = 'stop'
 
         class data:

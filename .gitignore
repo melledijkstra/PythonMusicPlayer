@@ -1,6 +1,9 @@
 .idea/
 
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
 /client.py
-/music/*
-vlc-example.py
-testing.py
+docs/
