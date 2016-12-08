@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from .tools import bugprint as b
 
 class Logger:
@@ -8,4 +10,4 @@ class Logger:
         pass
 
     def log(self, content: object):
-        b("[*"+str(self.__class__.__name__)+"*] " + str(content))
+        b("[*"+str(self.__class__.__name__)+"* | "+datetime.now().strftime('%H:%M:%S')+"] " + str(content))

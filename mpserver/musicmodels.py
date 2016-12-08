@@ -9,7 +9,7 @@ class Dictable:
     """
 
     @abstractmethod
-    def toDict(self, verbose: bool) -> dict:
+    def toDict(self, verbose=False) -> dict:
         """
         This method makes a dictionary from this class
 
@@ -24,17 +24,31 @@ class Dictable:
         return str(self.toDict(False))
 
 
+class Song(Dictable):
+    """
+    A song model which is used to store song information
+    """
+
+    def __init__(self, title: str, filepath: str):
+        self.id = id(self)
+        self.title = title
+        self.filepath = filepath
+
+    def toDict(self, verbose=False) -> dict:
+        return {'id': self.id, 'title': self.title}
+
+
 class Album(Dictable):
     """ Album class which is used to store album information """
 
-    def __init__(self, name: str, location: str):
+    def __init__(self, title: str, location: str):
         # // TODO: document these classes
         """
-        :param name:
+        :param title:
         :param location:
         """
         self.id = id(self)
-        self.name = name
+        self.title = title
         self.location = location
         self.songlist = []  # type: List[Song]
 
@@ -45,32 +59,20 @@ class Album(Dictable):
         """
         return self.songlist[ID] if len(self.songlist) >= id > 0 else None
 
-    def getsonglist(self):
-        pass
+    def getsonglist(self) -> List[Song]:
+        return self.songlist
 
     def set_song_list(self, songlist: list):
         self.songlist = songlist
 
-    def toDict(self, verbose: bool) -> dict:
-        retdict = {'id': self.id, 'name': self.name, 'location': self.location}
+    def toDict(self, verbose=False) -> dict:
+        retdict = {'id': self.id, 'title': self.title, 'location': self.location}
         if verbose:
             for song in self.songlist:
                 retdict['songlist'] = song.toDict(verbose)
         else:
-            retdict['songcount'] =len(self.songlist)
+            retdict['songcount'] = len(self.songlist)
         return retdict
 
-
-
-class Song(Dictable):
-    """
-    A song model which is used to store song information
-    """
-
-    def __init__(self, name: str, location: str):
-        self.id = id(self)
-        self.name = name
-        self.location = location
-
-    def toDict(self, verbose) -> dict:
-        return {'id': self.id, 'name': self.name, 'location': self.location}
+    def get_songlist(self):
+        return self.songlist

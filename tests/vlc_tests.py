@@ -12,7 +12,7 @@ def SongFinished(event):
     finish = 1
 
 
-class VlcTests(unittest.TestCase):
+class VLCTests(unittest.TestCase):
 
     samplefile = '../music/krtheme-cut.mp3'
 
