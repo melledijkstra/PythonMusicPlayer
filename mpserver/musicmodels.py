@@ -1,6 +1,8 @@
 from abc import abstractmethod
 from typing import List
 
+from tinytag import TinyTag
+
 
 class Dictable:
     """
@@ -30,12 +32,20 @@ class Song(Dictable):
     """
 
     def __init__(self, title: str, filepath: str):
+        super(Song, self).__init__()
         self.id = id(self)
         self.title = title
         self.filepath = filepath
+        # This operation can go wrong when another program is using the filepath
+        try:
+            self._tags = TinyTag.get(self.filepath, False, True)
+            self.duration = round(self._tags.duration * 1000)
+        except PermissionError as e:
+            self.duration = None
+            print(e)
 
     def toDict(self, verbose=False) -> dict:
-        return {'id': self.id, 'title': self.title}
+        return {'id': self.id, 'title': self.title, 'duration': self.duration}
 
 
 class Album(Dictable):
@@ -47,6 +57,7 @@ class Album(Dictable):
         :param title:
         :param location:
         """
+        super(Album, self).__init__()
         self.id = id(self)
         self.title = title
         self.location = location
@@ -73,6 +84,3 @@ class Album(Dictable):
         else:
             retdict['songcount'] = len(self.songlist)
         return retdict
-
-    def get_songlist(self):
-        return self.songlist

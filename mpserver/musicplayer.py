@@ -1,41 +1,40 @@
 import os
-from configparser import ConfigParser
+from configparser import RawConfigParser
 import glob
 import json
 from typing import List, Union
 
 import vlc
 
-from mpserver.datastructures import Stack
-from mpserver.interfaces import Logger
+from mpserver.datastructures import MusicQueue
+from mpserver.interfaces import Logger, EventFiring
 from mpserver.tools import constrain, Colors
-from mpserver.tools import printcolor as c
+from mpserver.tools import colorstring as c
 from mpserver.musicmodels import Album, Song
 
 
-class MusicPlayer(Logger):
+class MusicPlayer(Logger, EventFiring):
     """ This class can play music with the vlc library
         it keeps track of which file it is playing. This class has play, pause, etc. controls
         It also manages which albums/songs there are
     """
     _section = 'musicplayer'
 
-    def __init__(self, config: ConfigParser):
-        super().__init__()
+    def __init__(self, config: RawConfigParser, logging=True):
+        super(MusicPlayer, self).__init__()
+        self.set_logging(logging)
         self.v = vlc.Instance('--novideo')
-        self._current_song = None
+        self._music_queue = MusicQueue()
         self._player = self.v.media_player_new()
         self._config = config
         self.__process_conf__()
         self.log("allowed extensions: " + str(self._allowed_extensions))
         self.log("music directory: " + str(self._musicdir))
         self._albums = self.get_albums_and_songs()
-        # store a limit of songs in memory that can be played by pressing previous
-        self._songs_history = Stack(20)
         self.log("Albums found (" + str(len(self._albums)) + "): ")
         for album in self._albums:
             self.log(album)
-        self._playfile(config.get(self._section + '/events', 'onready', fallback='resources/ready.mp3'));
+        self.playfile(config.get(self._section + '/events', 'onready', fallback='resources/ready.mp3'))
 
     def get_albums_and_songs(self) -> List[Album]:
         """
@@ -74,26 +73,39 @@ class MusicPlayer(Logger):
                 song_count = 0
                 for extension in self._allowed_extensions:
                     song_count += len(glob.glob1(selfdir, "*." + extension))
-                albums.append(Album(name, location))
-
+                if song_count > 0 or self._allow_empty_albums:
+                    albums.append(Album(name, location))
         self._albums = albums
         return albums
 
-    def play(self, song: Song, add_to_history=True):
+    def play(self, song: Song, add_to_queue = True):
         self.log("Trying to play " + c(song.title, Colors.GREEN) + " with id: " + c(str(song.id), Colors.GREEN))
-        if add_to_history: self._songs_history.push(song)
-        media = self.v.media_new(song.filepath)
-        media.parse()
-        print("\tDuration: " + str(media.get_duration()))
-        self._player.set_media(media)
-        self._player.play()
-        pre_info = {"cur_song": song.id, "length": media.get_duration()}
-        print("\tsending pre_info: " + json.dumps(pre_info))
-        # conn.sendall(json.dumps(pre_info) + "\n")
-        while not self._player.is_playing():
-            continue
-            # self.updateSongInfoThread = UpdateSongInfoThread(self._player)
-            # self.updateSongInfoThread.start()
+        # This can go wrong if another program is using the file
+        try:
+            if add_to_queue: self._music_queue.latest(song)
+            song = self._music_queue.current()
+            media = self.v.media_new(song.filepath)
+            self._player.set_media(media)
+            self._player.play()
+            self._current_song = song
+            # wait for song to actual playing
+            while self._player.get_state() != vlc.State.Playing:
+                pass
+            self._fire_event(self.Events.PLAYING)
+        except vlc.VLCException as e:
+            print(e)
+
+    def play_previous(self):
+        prev_song = self._music_queue.previous()
+        if prev_song != None:
+            self._fire_event(self.Events.PLAY_PREV)
+            self.play(prev_song, False)
+
+    def play_next(self):
+        next_song = self._music_queue.next()
+        if next_song != None:
+            self._fire_event(self.Events.PLAY_NEXT)
+            self.play(next_song, False)
 
     def change_volume(self, volume: Union[str, int]):
         """
@@ -116,33 +128,28 @@ class MusicPlayer(Logger):
         self._player.audio_set_volume(new_vol)
 
     def change_pos(self, pos):
-        # TODO: change position of song and send update
         self._player.set_time(constrain(pos, 0, self._player.get_media().get_duration()))
         if not self._player.is_playing():
             self._player.play()
 
-    def play_previous(self):
-        song = self._songs_history.pop() # type: Song
-        self.play(song, add_to_history=False)
-
     def pause(self):
         self._player.pause()
-        # self.updateSongInfoThread = UpdateSongInfoThread(self._player)
-        # self.updateSongInfoThread.start()
+        self._fire_event(self.Events.PAUSING)
 
     def stop(self):
         self._player.stop()
+        self._current_song = None
+        self._fire_event(self.Events.STOPPING)
 
     def status(self) -> dict:
         # generate status dictionary
         return {
             'state': str(self._player.get_state()),
-            'current_song': (self._current_song.id if self._current_song != None else None),
+            'current_song': self._music_queue.current().toDict() if self._music_queue.current() != None else None,
             'time': self._player.get_time(),
             'position': (self._player.get_position() * 100 if self._player.get_position() != -1 else -1),
-            'length': self._player.get_length(),
             'volume': self._player.audio_get_volume(),
-            'mute': self._player.audio_get_mute(),
+            'mute': bool(self._player.audio_get_mute()),
         }
 
     def music_list_from_folder(self, rootdir) -> List[Song]:
@@ -194,7 +201,7 @@ class MusicPlayer(Logger):
         self.log(c("shutting down", Colors.WARNING))
         self._player.stop()
 
-    def _playfile(self, file: str, volume=50) -> bool:
+    def playfile(self, file: str, volume=70) -> bool:
         """
         Play a file without interrupting the original player
 
@@ -214,10 +221,10 @@ class MusicPlayer(Logger):
             return False
 
     def __process_conf__(self):
-        self._allowed_extensions = set(
-            self._config.get(self._section, 'allowed_extensions', fallback='mp3,wav').split(','))
+        self._allowed_extensions = set(self._config.get(self._section, 'allowed_extensions', fallback='mp3,wav').split(','))
         self._player.audio_set_volume(self._config.getint(self._section, 'start_volume', fallback=70))
-        self._musicdir = self._config.get(self._section, 'musiclocation', fallback='music').replace('/', '\\')
+        self._musicdir =            self._config.get(self._section, 'musiclocation', fallback='music').replace('/', '\\')
+        self._allow_empty_albums =  self._config.getboolean(self._section, 'allow_empty_albums', fallback=False)
 
     def __get_song_by_id__(self, song_id):
         for album in self._albums:
@@ -226,14 +233,14 @@ class MusicPlayer(Logger):
                     return song
         return None
 
-    def process_message__(self, message: dict):
+    def process_message(self, message: dict):
         retdict = {'result': 'ok'} # type: dict
         if 'cmd' in message:
             # STATUS
             if message['cmd'] == 'status':
-                retdict['status'] = self.status()
+                retdict['control'] = self.status()
             # PLAY
-            if message['cmd'] == 'play':
+            elif message['cmd'] == 'play':
                 if 'songid' in message and isinstance(message['songid'], int):
                     songid = int(message['songid'])
                     song = self.__find_song_by_id(songid)
@@ -248,6 +255,12 @@ class MusicPlayer(Logger):
             # PAUSE
             elif message['cmd'] == 'pause':
                 self.pause()
+            # PREVIOUS SONG
+            elif message['cmd'] == 'prev':
+                self.play_previous()
+            # NEXT SONG
+            elif message['cmd'] == 'next':
+                self.play_next()
             # VOLUME UP
             elif message['cmd'] == 'changevol':
                 if 'vol'in message:
@@ -268,7 +281,7 @@ class MusicPlayer(Logger):
                 album = self.__find_album_by_id(int(message['albumid']))
                 if album != None:
                     retdict['albumid'] = album.id
-                    retdict['songlist'] = [song.toDict() for song in album.get_songlist()]
+                    retdict['songlist'] = [song.toDict() for song in album.getsonglist()]
                 else:
                     retdict['result'] = 'error'
                     retdict['message'] = 'Album does not exist'
@@ -300,12 +313,24 @@ class MusicPlayer(Logger):
     def set_position(self, pos: float):
         pos = constrain(pos, 0, 1)
         self._player.set_position(pos)
+        self._fire_event(self.Events.POS_CHANGE)
+
+    class Events:
+        # TODO: make objects from events so more info is available about the event
+        PLAY_NEXT = 7
+        PAUSING = 6
+        PLAY_PREV = 5
+        POS_CHANGE = 4
+        VOLUME_DOWN = 3
+        VOLUME_UP = 2
+        PLAYING = 1
+        STOPPING = 0
 
 
 if __name__ == '__main__':
     inifile = input("path to ini file: ")
     if os.path.isfile(inifile):
-        config = ConfigParser()
+        config = RawConfigParser()
         config.read_file(open(inifile))
         musicplayer = MusicPlayer(config)
         cmd = ''
@@ -313,7 +338,7 @@ if __name__ == '__main__':
             cmd = input('command for musicplayer: ')
             try:
                 message = json.loads(cmd)
-                response = musicplayer.process_message__(message)
+                response = musicplayer.process_message(message)
                 print(response)
             except json.JSONDecodeError as e:
                 print(e)

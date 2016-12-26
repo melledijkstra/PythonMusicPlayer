@@ -3,7 +3,7 @@ from .config import DEBUG
 
 class Colors:
     BLUE = '\033[94m'
-    HEADER = '\033[95m'
+    PINK = '\033[95m'
     GREEN = '\033[92m'
     WARNING = '\033[93m'
     RED = '\033[91m'
@@ -12,7 +12,7 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 
-def printcolor(content, color):
+def colorstring(content, color):
     colors = Colors.__dict__
     if color in colors.values():
         return color + str(content) + Colors.CLEAR

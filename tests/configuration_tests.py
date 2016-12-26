@@ -1,6 +1,6 @@
 import unittest
 import os
-from configparser import ConfigParser
+from configparser import RawConfigParser
 
 from mpserver.musicserver import MusicServer
 
@@ -13,7 +13,7 @@ class TestApplicationConfiguration(unittest.TestCase):
         # first test if config file is present
         self.test_config_file_is_present()
         # load configuration for tests
-        self.config = ConfigParser()
+        self.config = RawConfigParser()
         self.config.read_file(open(self.configfile))
 
     def test_config_file_is_present(self):

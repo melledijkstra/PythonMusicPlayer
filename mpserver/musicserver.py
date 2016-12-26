@@ -1,36 +1,44 @@
 import json
+import os
 import socket
-import time
 import threading
-import youtube_dl
+import time
+from configparser import RawConfigParser
+from typing import Set
 
-from configparser import ConfigParser
-from typing import List
-
-from mpserver.downloader import YoutubeDownloader
+from mpserver.musicdownloader import MusicDownloader
+from .interfaces import Logger, EventFiring
 from .musicplayer import MusicPlayer
-from .interfaces import Logger
-from .tools import printcolor as c, Colors
+from .tools import colorstring as c, Colors
 
 
-class MusicServer(Logger):
-    """ The Music Server which the Android app connects with """
+class MusicServer(Logger, EventFiring):
+    """ The Music Server which the Android app connects with
+
+    Attributes:
+        listen      If true then server will keep accepting new connections
+    """
     _section = 'musicserver'
 
-    def __init__(self, config: ConfigParser):
+    def __init__(self, config: RawConfigParser):
         """
         :param config:
-        :type config: ConfigParser
+        :type config: RawConfigParser
         """
-        super().__init__()
-        self._listen = True
-        self._eventcallback = set()
+        super(MusicServer, self).__init__()
+        self.listen = True
+        self._event_callbacks = {}
+        for attribute in [attr for attr in dir(self.Events()) if not callable(attr) and not attr.startswith("__")]:
+            self._event_callbacks[attribute] = []
         self._config = config
         self.__process_conf__()
         self._mplayer = MusicPlayer(self._config)
-        self._youtube_downloader = YoutubeDownloader()
+        # subscribe to musicplayer events so that clients get updates
+        self._mplayer.subscribe(MusicPlayer.Events.PLAYING, self.update_mplayer_status_to_clients)
+        self._mplayer.subscribe(MusicPlayer.Events.PAUSING, self.update_mplayer_status_to_clients)
+        self._youtube_downloader = MusicDownloader(self._config)
         self._server = None
-        self._clients = [] # type: List[threading.Thread]
+        self._clients = set() # type: Set[socket.socket]
 
     def serve(self):
         """
@@ -41,15 +49,15 @@ class MusicServer(Logger):
         if self._server is None:
             self.__setup_server__()
         self._server.listen(self._connection_count)
-        while self._listen:
+        while self.listen:
             conn = self.__accept_connections__()
             # open new thread for every connection
-            t = ReceiveMessagesThread(conn, self.process_message__)
+            t = ReceiveMessagesThread(conn, self.process_message, self.__on_connection_close)
             # make daemon so that the main thread can kill this thread, otherwise it would be stuck
             t.setDaemon(True)
             t.start()
-            self._clients.append(t)
-            self.log("connection count: "+str(len(self._clients)))
+            self._clients.add(conn)
+            self.log("total connections: "+str(len(self._clients)))
 
 
     def __process_conf__(self):
@@ -64,7 +72,7 @@ class MusicServer(Logger):
         self.log("Waiting for connection...")
         (conn, (ip, port)) = self._server.accept()
         self.log(c("Connection established | IP " + ip + " | Port: " + str(port), Colors.BLUE))
-        self._mplayer._playfile(
+        self._mplayer.playfile(
             self._config.get(self._section+'/events', 'onconnected', fallback='resources/connected.mp3'),
             self._config.get(MusicPlayer._section, 'event_volume')
         )
@@ -83,7 +91,7 @@ class MusicServer(Logger):
             time.sleep(5)
             self.__setup_server__()
 
-    def process_message__(self, raw_message: str) -> dict:
+    def process_message(self, raw_message: str) -> str:
         """
         This function processes the raw message which comes from a client, acts on the command(s) given and returns a response.
         The response is in JSON format
@@ -97,21 +105,30 @@ class MusicServer(Logger):
             message = json.loads(raw_message)
             if isinstance(message, dict):
                 if 'mplayer' in message:
-                    return_dict['mplayer'] = self._mplayer.process_message__(message['mplayer'])
+                    return_dict['mplayer'] = self._mplayer.process_message(message['mplayer'])
                 if 'youtube_dl' in message:
                     return_dict['youtube_dl'] = self._youtube_downloader.process_message(message['youtube_dl'])
-                    # process youtube_dl
-                    pass
         except json.JSONDecodeError as e:
             return_dict['result'] = 'error'
-            return_dict['toast'] = 'invalid json'
+            return_dict['exception'] = str(e)
+            return_dict['toast'] = 'Invalid JSON'
         return json.dumps(return_dict)
+
+    def update_mplayer_status_to_clients(self):
+        self.log("updating status to all clients")
+        for client in self._clients:
+            response = json.dumps({"mplayer": {"control": self._mplayer.status()}})
+            client.sendall(bytes(response+"\n", encoding='utf8'))
+
+    def __on_connection_close(self, conn):
+        self._fire_event(self.Events.DISCONNECTED)
+        self._clients.discard(conn)
 
     def shutdown(self):
         self.log(c("shutting down",Colors.WARNING))
         self._stop_listening = True
         for client in self._clients:
-            client.join()
+            client.close()
         if self._server is not None:
             self._server.close()
         if self._mplayer is not None:
@@ -121,8 +138,7 @@ class MusicServer(Logger):
         """
         Set the listening state of the musicserver
         """
-        self._listen = state
-
+        self.listen = state
 
     class Events:
         """
@@ -137,31 +153,18 @@ class MusicServer(Logger):
         musicserver.subcribe(MusicServer.Events.CONNECTED, self.onConnected)
         ```
         """
-        CONNECTED = 'connected'
-        DISCONNECTED = 'disconnected'
-
-    def subcsribe(self, event: str, callback):
-        events = [attr for attr in dir(self.Events) if not callable(attr) and not attr.startswith("__")]
-        if event in events:
-            if callable(callback):
-                self._eventcallback[event].append(callback)
-        else:
-            raise self.UnknownMusicServerEvent("Event [" + event + "] does not exist")
-
-    def __fire_event(self, event: str):
-        events = [attr for attr in dir(self.Events) if not callable(attr) and not attr.startswith("__")]
-        if event in events:
-            for callback in self._eventcallback:
-                callback()
-
-    class UnknownMusicServerEvent(BaseException):
-        pass
+        CONNECTED = 1
+        DISCONNECTED = 0
 
 
-class ReceiveMessagesThread(threading.Thread, Logger):
-    def __init__(self, conn: socket.socket, message_received_callback):
-        super().__init__()
+class ReceiveMessagesThread(Logger, threading.Thread):
+    """
+    # TODO: write documentation
+    """
+    def __init__(self, conn: socket.socket, message_received_callback, on_close_callback):
+        super(ReceiveMessagesThread, self).__init__()
         self._callback = message_received_callback
+        self._on_close = on_close_callback
         self._conn = conn
 
     def run(self):
@@ -175,7 +178,7 @@ class ReceiveMessagesThread(threading.Thread, Logger):
         # check if data is empty string, if so then socket was probably disconnected then stop loop
         while data:
             try:
-                self.log(threading.current_thread().name+": Waiting for messages...")
+                # self.log(threading.current_thread().name+": Waiting for messages...")
                 data = self._conn.recv(recv_buf)
                 buf += str(data, 'utf-8')
 
@@ -186,14 +189,15 @@ class ReceiveMessagesThread(threading.Thread, Logger):
                     line, buf = buf.split('\n', 1)
                     self.log(threading.current_thread().name+": Received: " + c(line, Colors.BLUE))
                     response = self._callback(line)
-                    self.log(threading.current_thread().name+": Response: " + response)
+                    # self.log(threading.current_thread().name+": Response: " + response)
                     self._conn.sendall(bytes(response + "\n", encoding='utf8'))
                     time.sleep(0.06)
-            except socket.error as msg:
-                print(c("something went wrong: " + str(msg), Colors.RED))
+            except Exception as e:
+                print(c("something went wrong: " + str(e), Colors.RED))
                 break
                 # if no data is present then socket is closed
-        self.log(threading.current_thread().name+": "+c("Client closed socket", Colors.WARNING))
+        self.log(threading.current_thread().name+": "+c("Closing socket connection", Colors.WARNING))
         self._conn.close()
+        self._on_close(self._conn)
         return
 
