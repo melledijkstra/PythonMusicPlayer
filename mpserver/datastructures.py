@@ -42,9 +42,9 @@ class MusicQueue:
         _pointer    Points to the current index of the queue
 
     """
-    def __init__(self, songs=None): # limit=None, songs=None):
-        # if isinstance(limit, int):
-        #     self._limit = limit
+    def __init__(self, songs=None, limit=30):
+        if isinstance(limit, int):
+            self._limit = limit
         self._pointer = 0
         if isinstance(songs, list) and len(songs) > 0:
             self._queue = songs # type: List[Song]
@@ -52,12 +52,16 @@ class MusicQueue:
             self._queue = []
 
     def add(self, song):
-        # if self.size() < self._limit:
-            self._queue.append(song)
+        self._queue.append(song)
+        if self.size() > self._limit:
+            # if the queue is to big then remove the first played item
+            del self._queue[0]
 
     def add_next(self, song):
-        # TODO: use limit
         self._queue.insert(self._pointer + 1, song)
+        # if the list is to big then remove the first item in the list, which was played first
+        if self.size() > self._limit:
+            del self._queue[0]
 
     def next(self) -> Union[Song, None]:
         if self._pointer + 1 < len(self._queue):
@@ -65,11 +69,21 @@ class MusicQueue:
             return self.current()
         return None
 
+    def has_next(self) -> bool:
+        if self._pointer + 1 < len(self._queue):
+            return True
+        return False
+
     def previous(self) -> Union[Song, None]:
         if self._pointer - 1 >= 0:
             self._pointer -= 1
             return self.current()
         return None
+
+    def has_previous(self) -> bool:
+        if self._pointer - 1 >= 0:
+            return True
+        return False
 
     def current(self) -> Union[Song, None]:
         if len(self._queue) > 0:
@@ -93,6 +107,12 @@ class MusicQueue:
         return str(self._queue)
 
     def latest(self, song):
-        self._queue.append(song)
+        self.add(song)
         self._pointer = len(self._queue)-1
 
+    def replace_all(self, songlist: List[Song], pointer: int):
+        self._queue = songlist
+        if pointer > 0 and pointer < len(songlist):
+            self._pointer = pointer
+        else:
+            self._pointer = 0

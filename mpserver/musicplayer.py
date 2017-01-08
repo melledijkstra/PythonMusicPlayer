@@ -1,16 +1,16 @@
-import os
-from configparser import RawConfigParser
 import glob
 import json
-from typing import List, Union
+import os
+from configparser import RawConfigParser
+from typing import List, Union, Tuple
 
 import vlc
 
 from mpserver.datastructures import MusicQueue
 from mpserver.interfaces import Logger, EventFiring
-from mpserver.tools import constrain, Colors
-from mpserver.tools import colorstring as c
 from mpserver.musicmodels import Album, Song
+from mpserver.tools import colorstring as c
+from mpserver.tools import constrain, Colors
 
 
 class MusicPlayer(Logger, EventFiring):
@@ -26,6 +26,7 @@ class MusicPlayer(Logger, EventFiring):
         self.v = vlc.Instance('--novideo')
         self._music_queue = MusicQueue()
         self._player = self.v.media_player_new()
+        self._player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.__song_finished)
         self._config = config
         self.__process_conf__()
         self.log("allowed extensions: " + str(self._allowed_extensions))
@@ -34,7 +35,8 @@ class MusicPlayer(Logger, EventFiring):
         self.log("Albums found (" + str(len(self._albums)) + "): ")
         for album in self._albums:
             self.log(album)
-        self.playfile(config.get(self._section + '/events', 'onready', fallback='resources/ready.mp3'))
+        self.playfile(
+            config.get(self._section + '/events', 'onready', fallback='resources/ready.mp3').replace('\\', '/'))
 
     def get_albums_and_songs(self) -> List[Album]:
         """
@@ -65,9 +67,9 @@ class MusicPlayer(Logger, EventFiring):
                     # if so then check if it should be an album specified in ini
                     if not self._config.getboolean(self._section, 'musiclocation_is_album', fallback=True):
                         continue
-                    name = selfdir.replace('\\', '')
+                    name = os.path.basename(os.path.normpath(selfdir))
                 else:
-                    name = selfdir.split('\\')[-1]
+                    name = os.path.basename(os.path.normpath(selfdir))
 
                 location = selfdir
                 song_count = 0
@@ -78,16 +80,19 @@ class MusicPlayer(Logger, EventFiring):
         self._albums = albums
         return albums
 
-    def play(self, song: Song, add_to_queue = True):
+    def play(self, song: Song, add_to_queue=True):
         self.log("Trying to play " + c(song.title, Colors.GREEN) + " with id: " + c(str(song.id), Colors.GREEN))
         # This can go wrong if another program is using the file
         try:
             if add_to_queue: self._music_queue.latest(song)
             song = self._music_queue.current()
-            media = self.v.media_new(song.filepath)
-            self._player.set_media(media)
+            if self._player.get_state() == vlc.State.Playing:
+                self._player.stop()
+            # TODO: find out if new instance of a MediaPlayer is really needed
+            # you can't use the self._player instance after song finishes?
+            self._player = vlc.MediaPlayer(song.filepath)
+            self._player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.__song_finished)
             self._player.play()
-            self._current_song = song
             # wait for song to actual playing
             while self._player.get_state() != vlc.State.Playing:
                 pass
@@ -107,6 +112,13 @@ class MusicPlayer(Logger, EventFiring):
             self._fire_event(self.Events.PLAY_NEXT)
             self.play(next_song, False)
 
+    def __song_finished(self, event):
+        # when song is finished play next song in the queue
+        if self._music_queue.has_next():
+            self.play_next()
+        else:
+            self._fire_event(self.Events.FINISHED)
+
     def change_volume(self, volume: Union[str, int]):
         """
         Change the volume of the mpserver
@@ -122,10 +134,11 @@ class MusicPlayer(Logger, EventFiring):
         elif volume == "up":
             new_vol = constrain(self._player.audio_get_volume() + 3, 0, max)
         else:
-            self.log("volume type not accepted (" + str(volume) + ")")
+            self.log(c("volume type not accepted (" + str(volume) + ")", Colors.WARNING))
             return
-        print("Setting volume to: " + str(new_vol))
+        self.log("Setting volume to: " + str(new_vol))
         self._player.audio_set_volume(new_vol)
+        self._fire_event(self.Events.VOLUME_CHANGE)
 
     def change_pos(self, pos):
         self._player.set_time(constrain(pos, 0, self._player.get_media().get_duration()))
@@ -138,7 +151,6 @@ class MusicPlayer(Logger, EventFiring):
 
     def stop(self):
         self._player.stop()
-        self._current_song = None
         self._fire_event(self.Events.STOPPING)
 
     def status(self) -> dict:
@@ -168,7 +180,7 @@ class MusicPlayer(Logger, EventFiring):
         if os.path.isdir(rootdir):
             for musicfile in os.listdir(rootdir):
                 if musicfile.endswith(tuple(self._allowed_extensions)):
-                    song = Song(os.path.splitext(musicfile)[0], rootdir + "\\" + musicfile)
+                    song = Song(os.path.splitext(musicfile)[0], rootdir + os.sep + musicfile)
                     musiclist.append(song)
             return musiclist
         else:
@@ -209,22 +221,24 @@ class MusicPlayer(Logger, EventFiring):
         :return: True if file played and False if file is not found
         :rtype: bool
         """
-        if os.path.isfile(file):
-            # create new player so it doesn't disturb the original
-            player = self.v.media_player_new()
-            player.audio_set_volume(constrain(int(volume),0,100))
-            media = self.v.media_new(file)
-            player.set_media(media)
-            player.play()
-            return True
-        else:
-            return False
+        if self._player.get_state() != vlc.State.Playing:
+            if os.path.isfile(file):
+                # create new player so it doesn't disturb the original
+                player = self.v.media_player_new()
+                player.audio_set_volume(constrain(int(volume), 0, 100))
+                media = self.v.media_new(file)
+                player.set_media(media)
+                player.play()
+                return True
+            else:
+                return False
 
     def __process_conf__(self):
-        self._allowed_extensions = set(self._config.get(self._section, 'allowed_extensions', fallback='mp3,wav').split(','))
+        self._allowed_extensions = set(
+            self._config.get(self._section, 'allowed_extensions', fallback='mp3,wav').split(','))
         self._player.audio_set_volume(self._config.getint(self._section, 'start_volume', fallback=70))
-        self._musicdir =            self._config.get(self._section, 'musiclocation', fallback='music').replace('/', '\\')
-        self._allow_empty_albums =  self._config.getboolean(self._section, 'allow_empty_albums', fallback=False)
+        self._musicdir = self._config.get(self._section, 'musiclocation', fallback='music').replace('\\', '/')
+        self._allow_empty_albums = self._config.getboolean(self._section, 'allow_empty_albums', fallback=False)
 
     def __get_song_by_id__(self, song_id):
         for album in self._albums:
@@ -234,80 +248,113 @@ class MusicPlayer(Logger, EventFiring):
         return None
 
     def process_message(self, message: dict):
-        retdict = {'result': 'ok'} # type: dict
-        if 'cmd' in message:
-            # STATUS
-            if message['cmd'] == 'status':
-                retdict['control'] = self.status()
-            # PLAY
-            elif message['cmd'] == 'play':
-                if 'songid' in message and isinstance(message['songid'], int):
-                    songid = int(message['songid'])
-                    song = self.__find_song_by_id(songid)
-                    if song != None:
-                        self.play(song)
+        retdict = {'result': 'ok'}  # type: dict
+        try:
+            if 'cmd' in message:
+                # STATUS
+                if message['cmd'] == 'status':
+                    retdict['control'] = self.status()
+                # PLAY
+                elif message['cmd'] == 'play':
+                    if 'songid' in message and isinstance(message['songid'], int):
+                        songid = int(message['songid'])
+                        album, song = self.find_song_by_id(songid)
+                        if song != None:
+                            self.play(song)
+                        else:
+                            retdict['result'] = 'error'
+                            retdict['message'] = 'song with id ' + str(songid) + ' does not exist'
                     else:
                         retdict['result'] = 'error'
-                        retdict['message'] = 'song with id ' + str(songid) + ' does not exist'
+                        retdict['message'] = 'songid is not an id or no "songid" specified'
+                # PAUSE
+                elif message['cmd'] == 'pause':
+                    self.pause()
+                # PREVIOUS SONG
+                elif message['cmd'] == 'prev':
+                    self.play_previous()
+                # NEXT SONG
+                elif message['cmd'] == 'next':
+                    self.play_next()
+                # VOLUME UP
+                elif message['cmd'] == 'changevol':
+                    if 'vol' in message:
+                        self.change_volume(message['vol'])
+                    else:
+                        retdict['result'] = 'error'
+                        retdict['message'] = 'missing "vol"'
+                # CHANGE POSITION
+                elif message['cmd'] == 'changepos':
+                    if 'pos' in message:
+                        self.set_position(int(message['pos']) / 100)
+                    else:
+                        retdict['result'] = 'error'
+                        retdict['message'] = 'vol not defined or not a number between 0-100'
+                    pass
+                # PLAYNEXT
+                elif message['cmd'] == 'playnext':
+                    if 'songid' in message and isinstance(message['songid'], int):
+                        songid = int(message['songid'])
+                        album, song = self.find_song_by_id(songid)
+                        if song != None:
+                            self._music_queue.add_next(song)
+                            retdict['message'] = 'Song added to queue'
+                        else:
+                            retdict['result'] = 'error'
+                            retdict['message'] = 'song with id ' + str(songid) + ' does not exist'
+                    else:
+                        retdict['result'] = 'error'
+                        retdict['message'] = 'songid is not an id or no "songid" specified'
+                # RENAME SONG
+                # elif message['cmd'] == 'renamesong':
+                #     if 'songid' in message and isinstance(message['songid'], int):
+                #         songid = int(message['songid'])
+                #         newname = str(message['newname'])
+                #         album, song = self.find_song_by_id(songid)
+                #         if song != None:
+                #             self.renamesong(song, newname)
+                #         else:
+                #             retdict['result'] = 'error'
+                #             retdict['message'] = 'song with id ' + str(songid) + ' does not exist'
+                #     else:
+                #         retdict['result'] = 'error'
+                #         retdict['message'] = 'songid is not an id or no "songid" specified'
+                # GET SONGLIST
+                elif message['cmd'] == 'songlist' and 'albumid' in message:
+                    album = self.find_album_by_id(int(message['albumid']))
+                    if album != None:
+                        retdict['albumid'] = album.id
+                        retdict['songlist'] = [song.toDict() for song in album.getsonglist()]
+                    else:
+                        retdict['result'] = 'error'
+                        retdict['message'] = 'Album does not exist'
+                # GET ALBUMLIST
+                elif message['cmd'] == 'albumlist':
+                    retdict['albumlist'] = []
+                    for album in self._albums:
+                        albumdict = album.toDict(False)
+                        del albumdict['location']
+                        retdict['albumlist'].append(albumdict)
                 else:
                     retdict['result'] = 'error'
-                    retdict['message'] = 'songid is not an id or missing "songid"'
-            # PAUSE
-            elif message['cmd'] == 'pause':
-                self.pause()
-            # PREVIOUS SONG
-            elif message['cmd'] == 'prev':
-                self.play_previous()
-            # NEXT SONG
-            elif message['cmd'] == 'next':
-                self.play_next()
-            # VOLUME UP
-            elif message['cmd'] == 'changevol':
-                if 'vol'in message:
-                    self.change_volume(message['vol'])
-                else:
-                    retdict['result'] = 'error'
-                    retdict['message'] = 'missing "vol"'
-            # CHANGE POSITION
-            elif message['cmd'] == 'changepos':
-                if 'pos' in message:
-                    self.set_position(int(message['pos']) / 100)
-                else:
-                    retdict['result'] = 'error'
-                    retdict['message'] = 'vol not defined or not a number between 0-100'
-                pass
-            # GET SONGLIST
-            elif message['cmd'] == 'songlist' and 'albumid' in message:
-                album = self.__find_album_by_id(int(message['albumid']))
-                if album != None:
-                    retdict['albumid'] = album.id
-                    retdict['songlist'] = [song.toDict() for song in album.getsonglist()]
-                else:
-                    retdict['result'] = 'error'
-                    retdict['message'] = 'Album does not exist'
-            # GET ALBUMLIST
-            elif message['cmd'] == 'albumlist':
-                retdict['albumlist'] = []
-                for album in self._albums:
-                    albumdict = album.toDict(False)
-                    del albumdict['location']
-                    retdict['albumlist'].append(albumdict)
-            else:
-                retdict['result'] = 'error'
-                retdict['message'] = 'invalid command'
+                    retdict['message'] = 'invalid command'
+        except IndexError as e:
+            self.log(e)
+            retdict['result'] = 'error'
+            retdict['message'] = str(e)
         return retdict
 
-    def __find_album_by_id(self, albumid: int) -> Union[Album, None]:
+    def find_album_by_id(self, albumid: int) -> Union[Album, None]:
         for album in self._albums:
             if album.id == albumid:
                 return album
         return None
 
-    def __find_song_by_id(self, song_id: int) -> Union[Song, None]:
+    def find_song_by_id(self, song_id: int) -> Union[Tuple[Album, Song], None]:
         for album in self._albums:
             for song in album.songlist:
                 if song.id == song_id:
-                    return song
+                    return (album, song)
         return None
 
     def set_position(self, pos: float):
@@ -317,6 +364,8 @@ class MusicPlayer(Logger, EventFiring):
 
     class Events:
         # TODO: make objects from events so more info is available about the event
+        VOLUME_CHANGE = 9
+        FINISHED = 8
         PLAY_NEXT = 7
         PAUSING = 6
         PLAY_PREV = 5
@@ -325,6 +374,20 @@ class MusicPlayer(Logger, EventFiring):
         VOLUME_UP = 2
         PLAYING = 1
         STOPPING = 0
+
+    def renamesong(self, song: Song, newname: str):
+        self.log("renaming")
+        if self._music_queue.current() != None and self._music_queue.current().id == song.id:
+            return False
+        if newname != "":
+            try:
+                _, ext = os.path.splitext(song.filepath)
+                self.log(song.filepath + "  ->  " + os.path.dirname(song.filepath) + os.sep + newname + ext)
+                os.rename(song.filepath, os.path.dirname(song.filepath) + os.sep + newname + ext)
+                return True
+            except OSError as e:
+                self.log(c(e, Colors.RED))
+        return False
 
 
 if __name__ == '__main__':

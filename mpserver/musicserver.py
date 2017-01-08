@@ -34,8 +34,10 @@ class MusicServer(Logger, EventFiring):
         self.__process_conf__()
         self._mplayer = MusicPlayer(self._config)
         # subscribe to musicplayer events so that clients get updates
-        self._mplayer.subscribe(MusicPlayer.Events.PLAYING, self.update_mplayer_status_to_clients)
-        self._mplayer.subscribe(MusicPlayer.Events.PAUSING, self.update_mplayer_status_to_clients)
+        self._mplayer.subscribe(MusicPlayer.Events.PLAYING, self.update_clients)
+        self._mplayer.subscribe(MusicPlayer.Events.PAUSING, self.update_clients)
+        self._mplayer.subscribe(MusicPlayer.Events.FINISHED, self.update_clients)
+        self._mplayer.subscribe(MusicPlayer.Events.VOLUME_CHANGE, self.update_clients)
         self._youtube_downloader = MusicDownloader(self._config)
         self._server = None
         self._clients = set() # type: Set[socket.socket]
@@ -114,7 +116,7 @@ class MusicServer(Logger, EventFiring):
             return_dict['toast'] = 'Invalid JSON'
         return json.dumps(return_dict)
 
-    def update_mplayer_status_to_clients(self):
+    def update_clients(self):
         self.log("updating status to all clients")
         for client in self._clients:
             response = json.dumps({"mplayer": {"control": self._mplayer.status()}})

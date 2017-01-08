@@ -1,10 +1,7 @@
 import unittest
 
-import time
-import vlc
-
 from mpserver.datastructures import MusicQueue
-from mpserver.musicmodels import Album, Song
+from mpserver.musicmodels import Song
 from mpserver.musicplayer import MusicPlayer
 from configparser import RawConfigParser
 
@@ -45,6 +42,10 @@ class MusicPlayerTests(unittest.TestCase):
         print("play this song next: " + str(song3))
         print("next song: "+str(queue.next()))
         print("next song: "+str(queue.next()))
+        print("test what happens when adding 100 songs")
+        for i in range(100):
+            queue.add(song3)
+        print("size is: "+str(queue.size()))
 
 if __name__ == '__main__':
     unittest.main()
