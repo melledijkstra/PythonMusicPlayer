@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
-import youtube_dl
+
 import unittest
+
+import youtube_dl
+
 
 class YTDLLogger(object):
     def debug(self, msg):
@@ -14,10 +17,12 @@ class YTDLLogger(object):
     def error(self, msg):
         print(msg)
 
+
 def my_hook(d):
     print(d)
     if d['status'] == 'finished':
         print('Done downloading, now converting...')
+
 
 ydl_opts = {
     'format': 'bestaudio/best',
@@ -29,6 +34,7 @@ ydl_opts = {
     'logger': YTDLLogger(),
     'progress_hooks': [my_hook],
 }
+
 
 class YouttubeDLTests(unittest.TestCase):
 

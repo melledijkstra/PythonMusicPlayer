@@ -1,4 +1,4 @@
-python-vlc==1.1.2
-tinytag==0.17.0
-typing==3.5.2.2
+python-vlc>=2.2.6100
+tinytag==0.18.0
+typing==3.6.2
 youtube-dl==2016.12.1
