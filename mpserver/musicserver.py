@@ -1,5 +1,4 @@
 import json
-import os
 import socket
 import threading
 import time
@@ -40,7 +39,7 @@ class MusicServer(Logger, EventFiring):
         self._mplayer.subscribe(MusicPlayer.Events.VOLUME_CHANGE, self.update_clients)
         self._youtube_downloader = MusicDownloader(self._config)
         self._server = None
-        self._clients = set() # type: Set[socket.socket]
+        self._clients = set()  # type: Set[socket.socket]
 
     def serve(self):
         """
@@ -59,8 +58,7 @@ class MusicServer(Logger, EventFiring):
             t.setDaemon(True)
             t.start()
             self._clients.add(conn)
-            self.log("total connections: "+str(len(self._clients)))
-
+            self.log("total connections: " + str(len(self._clients)))
 
     def __process_conf__(self):
         """
@@ -75,7 +73,7 @@ class MusicServer(Logger, EventFiring):
         (conn, (ip, port)) = self._server.accept()
         self.log(c("Connection established | IP " + ip + " | Port: " + str(port), Colors.BLUE))
         self._mplayer.playfile(
-            self._config.get(self._section+'/events', 'onconnected', fallback='resources/connected.mp3'),
+            self._config.get(self._section + '/events', 'onconnected', fallback='resources/connected.mp3'),
             self._config.get(MusicPlayer._section, 'event_volume')
         )
         return conn
@@ -120,14 +118,14 @@ class MusicServer(Logger, EventFiring):
         self.log("updating status to all clients")
         for client in self._clients:
             response = json.dumps({"mplayer": {"control": self._mplayer.status()}})
-            client.sendall(bytes(response+"\n", encoding='utf8'))
+            client.sendall(bytes(response + "\n", encoding='utf8'))
 
     def __on_connection_close(self, conn):
         self._fire_event(self.Events.DISCONNECTED)
         self._clients.discard(conn)
 
     def shutdown(self):
-        self.log(c("shutting down",Colors.WARNING))
+        self.log(c("shutting down", Colors.WARNING))
         self._stop_listening = True
         for client in self._clients:
             client.close()
@@ -163,6 +161,7 @@ class ReceiveMessagesThread(Logger, threading.Thread):
     """
     # TODO: write documentation
     """
+
     def __init__(self, conn: socket.socket, message_received_callback, on_close_callback):
         super(ReceiveMessagesThread, self).__init__()
         self._callback = message_received_callback
@@ -189,7 +188,7 @@ class ReceiveMessagesThread(Logger, threading.Thread):
 
                 while buf.find('\n') != -1:
                     line, buf = buf.split('\n', 1)
-                    self.log(threading.current_thread().name+": Received: " + c(line, Colors.BLUE))
+                    self.log(threading.current_thread().name + ": Received: " + c(line, Colors.BLUE))
                     response = self._callback(line)
                     # self.log(threading.current_thread().name+": Response: " + response)
                     self._conn.sendall(bytes(response + "\n", encoding='utf8'))
@@ -198,8 +197,7 @@ class ReceiveMessagesThread(Logger, threading.Thread):
                 print(c("something went wrong: " + str(e), Colors.RED))
                 break
                 # if no data is present then socket is closed
-        self.log(threading.current_thread().name+": "+c("Closing socket connection", Colors.WARNING))
+        self.log(threading.current_thread().name + ": " + c("Closing socket connection", Colors.WARNING))
         self._conn.close()
         self._on_close(self._conn)
         return
-
