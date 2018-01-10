@@ -1,11 +1,13 @@
 import json
+import os
 from configparser import RawConfigParser
 
 from mpserver.musicplayer import MusicPlayer
 
 # Get configuration for the application
 config = RawConfigParser(defaults={})
-config.read_file(open('config.ini'))
+if os.path.isfile('config.ini'):
+    config.read_file(open('config.ini'))
 musicplayer = MusicPlayer(RawConfigParser(config))
 
 if __name__ == '__main__':

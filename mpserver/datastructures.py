@@ -9,6 +9,7 @@ class Stack:
     Stack is a Last-In/First-Out(LIFO) data structure which represents a stack of objects.
     It enables users to pop to and push from the stack.
     """
+
     def __init__(self, limit=None):
         if isinstance(limit, int):
             self._limit = limit
@@ -33,6 +34,7 @@ class Stack:
     def limit(self) -> int:
         return self._limit
 
+
 class MusicQueue:
     """
     A music queue which acts like every other MusicQueue
@@ -42,12 +44,13 @@ class MusicQueue:
         _pointer    Points to the current index of the queue
 
     """
+
     def __init__(self, songs=None, limit=30):
         if isinstance(limit, int):
             self._limit = limit
         self._pointer = 0
         if isinstance(songs, list) and len(songs) > 0:
-            self._queue = songs # type: List[Song]
+            self._queue = songs  # type: List[Song]
         else:
             self._queue = []
 
@@ -108,7 +111,7 @@ class MusicQueue:
 
     def latest(self, song):
         self.add(song)
-        self._pointer = len(self._queue)-1
+        self._pointer = len(self._queue) - 1
 
     def replace_all(self, songlist: List[Song], pointer: int):
         self._queue = songlist

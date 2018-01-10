@@ -1,23 +1,24 @@
 DEBUG = 1
 
-class commands:
+
+class Commands:
     PLAYER = 'mplayer'
     YOUTUBE = 'yt-dl'
 
-    class mplayer:
+    class MPlayer:
         CTRL = 'ctrl'
 
-        class ctrl:
+        class Control:
             CHANGEVOL = "changevol"
             CHANGEPOS = "changepos"
             PAUSE = 'pause'
             PLAY = 'play'
             STOP = 'stop'
 
-        class data:
+        class Data:
             LIST = 'list'
             ALBUM = 'album'
             SONG = 'song'
 
-    class yt_dl:
+    class YTDL:
         DWNL = 'download'

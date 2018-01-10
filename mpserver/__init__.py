@@ -1,1 +1,1 @@
-__all__ = ['musicplayer.py', 'musicserver.py', 'musicmodels']
+__all__ = ['musicplayer', 'musicserver', 'musicmodels']

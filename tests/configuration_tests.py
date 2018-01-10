@@ -1,12 +1,11 @@
-import unittest
 import os
+import unittest
 from configparser import RawConfigParser
 
 from mpserver.musicserver import MusicServer
 
 
 class TestApplicationConfiguration(unittest.TestCase):
-
     configfile = '../config.ini'
 
     def setUp(self):
@@ -22,7 +21,7 @@ class TestApplicationConfiguration(unittest.TestCase):
 
     def test_socket_configuration(self):
         port = self.config.get(MusicServer._section, 'port')
-        self.assertTrue(port.isdigit(), "Port should be a number, port = "+str(port))
+        self.assertTrue(port.isdigit(), "Port should be a number, port = " + str(port))
         self.assertTrue(len(str(port)) == 4, "Port should be 4 numbers long")
 
 
