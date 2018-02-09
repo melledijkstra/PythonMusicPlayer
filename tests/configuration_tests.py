@@ -20,7 +20,7 @@ class TestApplicationConfiguration(unittest.TestCase):
                                                                 "according to the github repository")
 
     def test_socket_configuration(self):
-        port = self.config.get(MusicServer._section, 'port')
+        port = self.config.get(MusicServer._config_section, 'port')
         self.assertTrue(port.isdigit(), "Port should be a number, port = " + str(port))
         self.assertTrue(len(str(port)) == 4, "Port should be 4 numbers long")
 

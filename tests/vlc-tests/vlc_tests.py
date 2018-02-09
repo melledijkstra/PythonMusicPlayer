@@ -1,6 +1,7 @@
-import unittest
-import vlc
 import time
+import unittest
+
+import vlc
 
 finish = 0
 
@@ -14,7 +15,7 @@ def SongFinished(event):
 
 
 class VLCTests(unittest.TestCase):
-    samplefile = '../music/krtheme-cut.mp3'
+    samplefile = '../testfiles/krtheme.wav'
 
     def setUp(self):
         self.instance = vlc.Instance()
@@ -49,6 +50,26 @@ class VLCTests(unittest.TestCase):
             self.player.audio_set_volume(volume)
             print("Volume set to: " + str(volume))
             time.sleep(0.05)
+
+    def test_play_file_when_already_playing(self):
+        def play(iteration: int):
+            if iteration >= 3: return
+            self.player.set_media(self.instance.media_new_path(self.samplefile))
+            self.player.play()
+            sec = 0
+            # wait for vlc to play media
+            while self.player.get_state() != vlc.State.Playing:
+                pass
+            while True:
+                m, s = divmod(self.player.get_time() / 1000, 60)
+                print("%02d:%02d" % (m, s))
+                time.sleep(1)
+                sec += 1
+                if sec > 3:
+                    play(iteration + 1)
+                    return
+        print("Override already playing media with new media")
+        play(0)  # recursive call
 
 
 if __name__ == '__main__':

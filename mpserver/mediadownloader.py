@@ -2,19 +2,23 @@ from configparser import RawConfigParser
 
 import youtube_dl
 
+from mpserver.grpc import mmp_pb2_grpc as rpc
+from mpserver.grpc import mmp_pb2
+
 from mpserver.interfaces import Logger, EventFiring
 
 
-class MusicDownloader(Logger, EventFiring):
+class MediaDownloader(rpc.MediaDownloaderServicer, Logger, EventFiring):
     """
     Wrapper for the youtube_dl.YoutubeDL so it can be used in the mpserver package
     """
 
-    _section = 'youtube_dl'
+    _section = 'mediadownloader'
 
     def __init__(self, config: RawConfigParser):
-        super(MusicDownloader, self).__init__()
+        super(MediaDownloader, self).__init__()
         self._config = config
+        # TODO: make some of these options available in ini file
         self._options = {
             'format': 'bestaudio/best',
             'postprocessors': [{
@@ -80,5 +84,17 @@ class MusicDownloader(Logger, EventFiring):
             print(msg)
 
     def __process_conf(self):
-        self._raw_download_location = self._config.get(self._section, 'download_location', fallback='{{album}}/%(title)s.%(ext)s')
-        self.log('raw_download_location: '+self._raw_download_location)
+        self._raw_download_location = self._config.get(self._section, 'download_location',
+                                                       fallback='{{album}}/%(title)s.%(ext)s')
+        self.log('raw_download_location: ' + self._raw_download_location)
+
+    def DownloadMedia(self, request, context):
+        return super().DownloadMedia(request, context)
+
+    def RetrieveMDStatus(self, request, context):
+        return super().RetrieveMDStatus(request, context)
+
+    def NotifyMDStatus(self, request, context):
+        return super().NotifyMDStatus(request, context)
+
+

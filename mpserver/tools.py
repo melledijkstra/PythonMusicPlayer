@@ -1,4 +1,10 @@
+import sys
+
+import os
+
 from .config import DEBUG
+
+colors_enabled = None
 
 
 class Colors:
@@ -12,9 +18,28 @@ class Colors:
     UNDERLINE = '\033[4m'
 
 
+def console_has_color():
+    """
+    Returns True if the running system's terminal supports color, and False
+    otherwise.
+    Imported from django
+    """
+    global colors_enabled
+    if colors_enabled is None:
+        plat = sys.platform
+        supported_platform = plat != 'Pocket PC' and (plat != 'win32' or
+                                                      'ANSICON' in os.environ)
+        # isatty is not always implemented, #6223.
+        is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+        if not supported_platform or not is_a_tty:
+            colors_enabled = False
+        colors_enabled = True
+    return colors_enabled
+
+
 def colorstring(content, color):
     colors = Colors.__dict__
-    if color in colors.values():
+    if color in colors.values() and console_has_color():
         return color + str(content) + Colors.CLEAR
     else:
         return content
@@ -26,10 +51,8 @@ def bugprint(content: object):
 
     :type content: str
     :param content: the string to print
-    :type end: str
-    :param end: the ending passed to print
     """
-    if DEBUG != None and DEBUG == 1:
+    if DEBUG is not None and DEBUG == 1:
         print(content)
 
 

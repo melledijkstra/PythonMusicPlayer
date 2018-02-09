@@ -8,11 +8,15 @@ from datetime import datetime
 from mpserver.musicserver import MusicServer
 from mpserver.tools import Colors
 from mpserver.tools import colorstring as c
+from mpserver.config import __version__
 
 musicserver = None  # type: musicserver.MusicServer
 
 # Start main program
-banner = c("\n\tMelonMusicPlayer made by Melle Dijkstra © " + str(datetime.now().year) + "\n", Colors.BLUE)
+banner = c("\n"
+           "\tMelonMusicPlayer made by Melle Dijkstra © " + str(datetime.now().year) + "\n"
+           "\tVersion: " + __version__ + "\n",
+           Colors.BLUE)
 
 if __name__ == '__main__':
     # Check if program is run with root privileges, which is needed for socket communication
@@ -33,7 +37,7 @@ if __name__ == '__main__':
         # This method will start the server and wait for anyone to connect
         musicserver.serve()
     except KeyboardInterrupt as e:
-        print(c("trying to abort program...", Colors.BOLD))
+        print(c("Aborting MelonMusicPlayer...", Colors.BOLD))
         musicserver.set_listen_state(False)
         musicserver.shutdown()
 

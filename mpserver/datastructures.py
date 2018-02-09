@@ -1,7 +1,7 @@
 import random
 from typing import List, Union
 
-from mpserver.musicmodels import Song
+from mpserver.models import Song
 
 
 class Stack:
@@ -15,7 +15,7 @@ class Stack:
             self._limit = limit
         self._items = []
 
-    def isEmpty(self) -> bool:
+    def is_empty(self) -> bool:
         return self._items == []
 
     def push(self, item):
@@ -115,7 +115,7 @@ class MusicQueue:
 
     def replace_all(self, songlist: List[Song], pointer: int):
         self._queue = songlist
-        if pointer > 0 and pointer < len(songlist):
+        if 0 < pointer < len(songlist):
             self._pointer = pointer
         else:
             self._pointer = 0

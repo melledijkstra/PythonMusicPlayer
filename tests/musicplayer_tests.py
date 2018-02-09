@@ -2,7 +2,7 @@ import unittest
 from configparser import RawConfigParser
 
 from mpserver.datastructures import MusicQueue
-from mpserver.musicmodels import Song
+from mpserver.models import Song
 from mpserver.musicplayer import MusicPlayer
 
 
