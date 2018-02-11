@@ -1,11 +1,12 @@
 import glob
 import os
+import time
 from configparser import RawConfigParser
 from typing import List, Union, Tuple
 
-import time
 import vlc
 
+from mpserver.config import DEBUG
 from .datastructures import MusicQueue
 from .grpc import mmp_pb2
 from .grpc import mmp_pb2_grpc as rpc
@@ -24,11 +25,12 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
 
     def __init__(self, config: RawConfigParser, logging=True):
         super(MusicPlayer, self).__init__()
+        self.close_streams = False
         self.last_update_time = 0
         self.set_logging(logging)
-        self.v = vlc.Instance('--novideo')
+        self.v = vlc.Instance('--novideo')  # type: vlc.Instance
         self._music_queue = MusicQueue()
-        self._player = self.v.media_player_new()
+        self._player = self.v.media_player_new()  # type: vlc.MediaPlayer
         self._player.event_manager().event_attach(vlc.EventType.MediaPlayerEndReached, self.__song_finished)
         self._config = config
         self.__process_conf__()
@@ -140,6 +142,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         if self._music_queue.has_next():
             self.play_next()
         else:
+            self._player.set_position(1)
             self._fire_event(self.Events.FINISHED)
             self.__update_clients()
 
@@ -243,6 +246,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         Shutdown the musicplayer and clean up anything which needs to be cleaned up
         """
         self.log(c("shutting down", Colors.WARNING))
+        self.close_streams = True
         self._player.stop()
 
     def playfile(self, file: str) -> bool:
@@ -334,7 +338,8 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         STOPPING = 0
 
     def __update_clients(self):
-        self.log("Updating clients")
+        if DEBUG:
+            self.log("Updating clients")
         self.last_update_time = int(time.time())
 
     def RetrieveAlbumList(self, request: mmp_pb2.MediaData, context):
@@ -359,14 +364,15 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
     def Play(self, request, context):
         response = mmp_pb2.MMPResponse()
         if request.state == mmp_pb2.MediaControl.PLAY:
-            album, song = self.find_song_by_id(request.song_id)
-            if song is not None:
-                self.play(song)
-                self.__update_clients()
-                response.result = mmp_pb2.MMPResponse.OK
-            else:
-                response.result = mmp_pb2.MMPResponse.ERROR
-                response.error = 'song with id ' + str(request.song_id) + ' does not exist'
+            if request.song_id != 0:
+                album, song = self.find_song_by_id(request.song_id)
+                if song is not None:
+                    self.play(song)
+                    self.__update_clients()
+                    response.result = mmp_pb2.MMPResponse.OK
+                else:
+                    response.result = mmp_pb2.MMPResponse.ERROR
+                    response.error = 'song with id ' + str(request.song_id) + ' does not exist'
         elif request.state == mmp_pb2.MediaControl.PAUSE:
             self.pause()
             self.__update_clients()
@@ -419,7 +425,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         yield self.__get_status()
         last_status_time = int(time.time())
         # keep this stream open so we can push updates when needed
-        while True:
+        while not self.close_streams:
             # keep checking if clients should be notified
             while self.last_update_time > last_status_time:
                 last_status_time = self.last_update_time
@@ -456,7 +462,11 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
 
     def __get_status(self):
         status = mmp_pb2.MMPStatus()
-        status.state = mmp_pb2.MMPStatus.PLAYING
+        try:
+            # get current vlc state -> replace "State." part -> to uppercase = this should match proto state
+            status.state = mmp_pb2.MMPStatus.State.Value(str(self._player.get_state()).replace('State.', '').upper())
+        except ValueError:
+            status.state = mmp_pb2.MMPStatus.NOTHINGSPECIAL
         current_song = self._music_queue.current()
         if current_song is not None:
             status.current_song.CopyFrom(current_song.to_protobuf())

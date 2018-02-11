@@ -77,5 +77,6 @@ class MusicServer(Logger, EventFiring):
 
     def shutdown(self):
         self.log(c("shutting down", Colors.WARNING))
+        self._mplayer.shutdown()
         if self._gserver is not None:
             self._gserver.stop(0)
