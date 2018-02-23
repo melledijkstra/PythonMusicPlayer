@@ -19,7 +19,7 @@ class Protoble:
 
         :return: this class as protobuf object
         """
-        return {}
+        return None
 
 
 class Song(Protoble):

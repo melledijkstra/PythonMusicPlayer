@@ -18,8 +18,8 @@ class VLCTests(unittest.TestCase):
     samplefile = '../testfiles/krtheme.wav'
 
     def setUp(self):
-        self.instance = vlc.Instance()
-        self.player = self.instance.media_player_new()
+        self.instance = vlc.Instance()  # type: vlc.Instance
+        self.player = self.instance.media_player_new()  # type: vlc.MediaPlayer
 
     def test_can_play_sound(self):
         media = self.instance.media_new_path(self.samplefile)  # Your audio file here
@@ -68,8 +68,26 @@ class VLCTests(unittest.TestCase):
                 if sec > 3:
                     play(iteration + 1)
                     return
+
         print("Override already playing media with new media")
         play(0)  # recursive call
+
+    def test_stream_mixcloud(self):
+        url = 'http://stream6.mixcloud.com/secure/c/m4a/64/4/e/3/5/b074-a7ef-4da5-a2cf-a390da945cbb.m4a?sig' \
+              '=xlsqXNRipncHPvbxNMMnfQ'
+        self.player.set_mrl(url)
+        self.player.play()
+        while self.player.get_state() != vlc.State.Playing:
+            pass
+        i = 0
+        print('length: {}'.format(self.player.get_length()))
+        while i < 30:
+            print('time: {}'.format(self.player.get_time()))
+            if i == 10:
+                # test seeking in stream
+                self.player.set_position(0.2)
+            time.sleep(1)
+            i += 1
 
 
 if __name__ == '__main__':

@@ -1,16 +1,23 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError as e:
     from distutils.core import setup
 
 __version__ = "3"
 
 config = {
-    'name': 'MelonMusicPlayer',
+    'name': 'melon-music-player',
     'version': __version__,
-    'description': 'A MusicPlayer which can be controlled by the Android App',
+    'description': 'A MusicPlayer which can be controlled by different clients',
     'author': 'Melle Dijkstra',
     'author_email': 'dev.melle@gmail.com',
+    'classifiers': [
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: End Users/Desktop',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+    ],
     'url': 'https://melledijkstra.nl',
     'download_url': 'https://github.com/MelleDijkstra/PythonMusicPlayer',
     'license': 'MIT',
@@ -25,7 +32,7 @@ config = {
         'protobuf==3.5.1',
         'mutagen==1.40.0',
     ],
-    'packages': ['mpserver'],
+    'packages': find_packages(exclude=['docs', 'tests']),
 }
 
 setup(**config)
