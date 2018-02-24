@@ -8,7 +8,7 @@ __version__ = "3.post1"
 config = {
     'name': 'melon-music-player',
     'version': __version__,
-    'description': 'A MusicPlayer which can be controlled by different clients',
+    'description': 'A MusicPlayer which can be controlled by different controllers',
     'long_description': open('README.md').read(),
     'author': 'Melle Dijkstra',
     'author_email': 'dev.melle@gmail.com',
