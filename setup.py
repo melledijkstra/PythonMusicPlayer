@@ -3,12 +3,13 @@ try:
 except ImportError as e:
     from distutils.core import setup
 
-__version__ = "3"
+__version__ = "3.post1"
 
 config = {
     'name': 'melon-music-player',
     'version': __version__,
     'description': 'A MusicPlayer which can be controlled by different clients',
+    'long_description': open('README.md').read(),
     'author': 'Melle Dijkstra',
     'author_email': 'dev.melle@gmail.com',
     'classifiers': [

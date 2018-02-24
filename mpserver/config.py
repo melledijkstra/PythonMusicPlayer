@@ -1,2 +1,2 @@
 __version__ = "3"
-DEBUG = 1
+LOG = 1

@@ -5,7 +5,7 @@ from mpserver.musicplayer import MusicPlayer
 from .grpc import mmp_pb2
 from .grpc import mmp_pb2_grpc as rpc
 from .interfaces import Logger, EventFiring
-from .models import Song
+from .models import SongModel
 from .tools import Colors
 from .tools import colorstring as c
 
@@ -30,7 +30,7 @@ class DataManager(rpc.DataManagerServicer, Logger, EventFiring):
     def __process_conf(self):
         pass
 
-    def renamesong(self, song: Song, newtitle: str):
+    def renamesong(self, song: SongModel, newtitle: str):
         current_song = self._mplayer.get_queue().current()
         if current_song is not None and current_song.id == song.id:
             raise RenameException("Can not rename song which is currently playing")

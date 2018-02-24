@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from mpserver.config import DEBUG
+from mpserver.config import LOG
 from .tools import bugprint as b
 
 
@@ -14,7 +14,7 @@ class Logger:
         self._logging = True
 
     def log(self, content: object):
-        if self._logging and DEBUG:
+        if self._logging and LOG:
             b("[*" + str(self.__class__.__name__) + "* | " + datetime.now().strftime('%H:%M:%S') + "] " + str(content))
 
     def set_logging(self, state: bool):

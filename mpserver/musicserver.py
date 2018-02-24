@@ -34,7 +34,6 @@ class MusicServer(Logger, EventFiring):
         self.__process_conf__()
         # setup server components
         self._mplayer = MusicPlayer(config)
-        self.__subscribe_listeners()
         self._media_downloader = MediaDownloader(self._config)
         self._data_manager = DataManager(self._mplayer, config)
         # Setup gRPC Server
@@ -44,17 +43,6 @@ class MusicServer(Logger, EventFiring):
         rpc.add_MediaDownloaderServicer_to_server(self._media_downloader, self._gserver)
         self._gserver.add_insecure_port('[::]:' + str(self._port))
 
-    def __subscribe_listeners(self):
-        """
-        Subscribe to music player events
-
-        :return:
-        """
-        # self._mplayer.subscribe(MusicPlayer.Events.PLAYING, self.update_clients)
-        # self._mplayer.subscribe(MusicPlayer.Events.PAUSING, self.update_clients)
-        # self._mplayer.subscribe(MusicPlayer.Events.FINISHED, self.update_clients)
-        # self._mplayer.subscribe(MusicPlayer.Events.VOLUME_CHANGE, self.update_clients)
-
     def serve(self):
         """
         This method starts the music server and listens for incoming connections
@@ -62,9 +50,10 @@ class MusicServer(Logger, EventFiring):
         cmd = ''
         self._gserver.start()
         self.log("gRPC Server started... (port: " + str(self._port) + ")")
+        print(c("Command line functionality coming soon", Colors.PINK))
         while cmd != "exit":
-            print(c("Command line functionality coming soon (type 'exit' to exit for now)", Colors.PINK))
-            cmd = input("$-> ")
+            # cmd = input("$-> ")
+            pass
         self._gserver.stop(0)
 
     def __process_conf__(self):

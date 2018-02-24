@@ -105,6 +105,7 @@ message MMPStatus {
     int64 position = 3;
     int32 volume = 4; // current volume level
     bool mute = 5; // 1 if muted, if not 0
+    int64 elapsed_time = 6; // the time elapsed in seconds
 }
 
 //

@@ -1,3 +1,4 @@
+import datetime
 import time
 import unittest
 
@@ -15,7 +16,7 @@ def SongFinished(event):
 
 
 class VLCTests(unittest.TestCase):
-    samplefile = '../testfiles/krtheme.wav'
+    samplefile = '../testfiles/2CELLOS/2CELLOS - Hysteria.mp3'
 
     def setUp(self):
         self.instance = vlc.Instance()  # type: vlc.Instance
@@ -88,6 +89,24 @@ class VLCTests(unittest.TestCase):
                 self.player.set_position(0.2)
             time.sleep(1)
             i += 1
+
+    def test_get_meta_data(self):
+        self.player.set_mrl(self.samplefile)
+        m = self.player.get_media()
+        m.parse()  # Synchronous parse of the stream
+        print('parsed')
+        rating = m.get_meta(vlc.Meta.Rating)
+        artwork_url = m.get_meta(vlc.Meta.ArtworkURL)  # type: str
+        print(str(datetime.timedelta(seconds=m.get_duration() / 1000)))
+        print(str(type(rating)) + ' - ' + str(rating))
+        print(str(type(artwork_url)) + ' - ' + str(artwork_url))
+        if artwork_url is not None:
+            try:
+                import PIL.Image
+                img = PIL.Image.open(artwork_url.replace('file:///', ''))
+                img.show()
+            except ImportError:
+                print('can\'t show image')
 
 
 if __name__ == '__main__':

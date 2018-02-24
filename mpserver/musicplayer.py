@@ -6,12 +6,12 @@ from typing import List, Union, Tuple
 
 import vlc
 
-from mpserver.config import DEBUG
+from mpserver.config import LOG
 from .datastructures import MusicQueue
 from .grpc import mmp_pb2
 from .grpc import mmp_pb2_grpc as rpc
 from .interfaces import Logger, EventFiring
-from .models import Album, Song
+from .models import AlbumModel, SongModel
 from .tools import colorstring as c
 from .tools import constrain, Colors
 
@@ -42,7 +42,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         self.playfile(
             config.get(self._section + '/events', 'onready', fallback='resources/ready.mp3').replace('\\', '/'))
 
-    def get_albums_and_songs(self) -> List[Album]:
+    def get_albums_and_songs(self) -> List[AlbumModel]:
         """
         Get albums and song from a specific folder and generates a list with dictionaries from it
         """
@@ -51,7 +51,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
             album.set_song_list(self.music_list_from_folder(album.location))
         return albums
 
-    def album_list_from_folder(self, rootdir: str) -> List[Album]:
+    def album_list_from_folder(self, rootdir: str) -> List[AlbumModel]:
         # TODO: update documentation
         """ Generates a list of albums from specific directory
             every folder in the specified directory counts a an album.
@@ -81,11 +81,11 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
                 for extension in self._allowed_extensions:
                     song_count += len(glob.glob1(selfdir, "*." + extension))
                 if song_count > 0 or self._allow_empty_albums:
-                    albums.append(Album(name, location))
+                    albums.append(AlbumModel(name, location))
         self._albums = albums
         return albums
 
-    def play(self, song: Song, add_to_queue=True):
+    def play(self, song: SongModel, add_to_queue=True):
         """
         Plays a song
 
@@ -192,7 +192,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         self._player.stop()
         self._fire_event(self.Events.STOPPING)
 
-    def music_list_from_folder(self, rootdir) -> List[Song]:
+    def music_list_from_folder(self, rootdir) -> List[SongModel]:
         """ returns a list with music names in the directory specified.
             see allowed_extensions in config file for allowed extensions
 
@@ -209,12 +209,12 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
             allow = tuple(self._allowed_extensions)
             for musicfile in os.listdir(rootdir):
                 if musicfile.endswith(allow):
-                    musiclist.append(Song(os.path.splitext(musicfile)[0], rootdir + os.sep + musicfile))
+                    musiclist.append(SongModel(os.path.splitext(musicfile)[0], rootdir + os.sep + musicfile))
             return musiclist
         else:
             raise IOError("Folder '" + rootdir + "' does not exist!")
 
-    def song_list_from_album(self, albumid) -> List[Song]:
+    def song_list_from_album(self, albumid) -> List[SongModel]:
         """
         Creates a song list from an album id
 
@@ -234,7 +234,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
 
         :param int albumid:
         :return: The album object or None if album does not exist
-        :rtype: Album
+        :rtype: AlbumModel
         """
         for album in self._albums:
             if album.id == albumid:
@@ -289,7 +289,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
                     return song
         return None
 
-    def find_album_by_id(self, albumid: int) -> Union[Album, None]:
+    def find_album_by_id(self, albumid: int) -> Union[AlbumModel, None]:
         """
         Find Album object by its ID
 
@@ -301,7 +301,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
                 return album
         return None
 
-    def find_song_by_id(self, song_id: int) -> Union[Tuple[Album, Song], Tuple[None, None]]:
+    def find_song_by_id(self, song_id: int) -> Union[Tuple[AlbumModel, SongModel], Tuple[None, None]]:
         """
         Find Song object by its ID, if not found None is returned for album and song
 
@@ -338,7 +338,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         STOPPING = 0
 
     def __update_clients(self):
-        if DEBUG:
+        if LOG:
             self.log("Updating clients")
         self.last_update_time = int(time.time())
 
@@ -355,7 +355,7 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
             response.song_list.extend([song.to_protobuf() for song in album.songlist])
             return response
         else:
-            print("Album does not exist")
+            self.log("Album does not exist")
             # TODO: add this to response
             # retdict['result'] = 'error'
             # retdict['message'] = 'Album does not exist'
@@ -473,5 +473,5 @@ class MusicPlayer(rpc.MusicPlayerServicer, Logger, EventFiring):
         status.volume = self._player.audio_get_volume()
         status.mute = bool(self._player.audio_get_mute())
         status.position = int(self._player.get_position() * 100 if self._player.get_position() != -1 else -1)
-        #     'time': self._player.get_time(),
+        status.elapsed_time = int(self._player.get_time() / 1000 if self._player.get_time() != -1 else -1)
         return status

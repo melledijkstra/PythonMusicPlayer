@@ -1,9 +1,9 @@
 import os
 import sys
 
-from .config import DEBUG
+from .config import LOG
 
-colors_enabled = None
+colors_supported = None
 
 
 class Colors:
@@ -19,21 +19,21 @@ class Colors:
 
 def console_has_color():
     """
-    Returns True if the running system's terminal supports color, and False
-    otherwise.
+    Returns True if the running system's terminal
+    supports color, and False otherwise.
     Imported from django
+    @see https://github.com/django/django/blob/master/django/core/management/color.py
     """
-    global colors_enabled
-    if colors_enabled is None:
+    global colors_supported
+    if colors_supported is None:
         plat = sys.platform
-        supported_platform = plat != 'Pocket PC' and (plat != 'win32' or
-                                                      'ANSICON' in os.environ)
+        supported_platform = plat != 'Pocket PC' and (plat != 'win32' or 'ANSICON' in os.environ)
+        pycharm_hosted = int(os.environ.get('PYCHARM_HOSTED', 0)) is 1
+
         # isatty is not always implemented, #6223.
         is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
-        if not supported_platform or not is_a_tty:
-            colors_enabled = False
-        colors_enabled = True
-    return colors_enabled
+        colors_supported = supported_platform and is_a_tty or pycharm_hosted
+    return colors_supported
 
 
 def colorstring(content, color):
@@ -51,7 +51,7 @@ def bugprint(content: object):
     :type content: str
     :param content: the string to print
     """
-    if DEBUG is not None and DEBUG == 1:
+    if LOG is not None and LOG == 1:
         print(content)
 
 
@@ -65,7 +65,7 @@ def constrain(val, min, max):
 
 
 def print_progress_bar(iteration: int, total: int, prefix: str = '', suffix: str = '', decimals: int = 1,
-                       length: int = 100, fill: str ='█'):
+                       length: int = 100, fill: str = '█'):
     """
     Call in a loop to create terminal progress bar
     @params:
