@@ -1,3 +1,2 @@
 # ignore generated documentation
-_build
-_templates
+build

@@ -1,7 +1,7 @@
 # Python Music Player
 [![GitHub license](https://img.shields.io/github/license/MelleDijkstra/PythonMusicPlayer.svg)](https://github.com/MelleDijkstra/PythonMusicPlayer/blob/master/LICENSE)
 [![PyPI version](https://badge.fury.io/py/melon-music-player.svg)](https://badge.fury.io/py/melon-music-player)
-[![GitHub issues](https://img.shields.io/github/issues/MelleDijkstra/PythonMusicPlayer.svg)](https://github.com/MelleDijkstra/PythonMusicPlayer/issues)
+[![Documentation Status](https://readthedocs.org/projects/pythonmusicplayer/badge/?version=latest)](http://pythonmusicplayer.readthedocs.io/en/latest/?badge=latest)
 
 [![Twitter](https://img.shields.io/twitter/url/https/github.com/MelleDijkstra/PythonMusicPlayer.svg?style=social)](https://twitter.com/intent/tweet?text=MelonMusicPlayer:&url=https%3A%2F%2Fgithub.com%2FMelleDijkstra%2FPythonMusicPlayer)
 
