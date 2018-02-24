@@ -1,24 +1,39 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError as e:
     from distutils.core import setup
 
+__version__ = "3.post1"
+
 config = {
-    'name': 'MelonMusicPlayer',
-    'version': '2.1',
-    'description': 'A MusicPlayer which can be controlled by the Android App',
+    'name': 'melon-music-player',
+    'version': __version__,
+    'description': 'A MusicPlayer which can be controlled by different controllers',
+    'long_description': open('README.md').read(),
     'author': 'Melle Dijkstra',
     'author_email': 'dev.melle@gmail.com',
+    'classifiers': [
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: End Users/Desktop',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+    ],
     'url': 'https://melledijkstra.nl',
     'download_url': 'https://github.com/MelleDijkstra/PythonMusicPlayer',
     'license': 'MIT',
     'install_requires': [
-        'python-vlc>=2.2.6100',
-        'tinytag>=0.18.0',
-        'typing>=3.6.2',
-        'youtube-dl>=2016.12.1'
+        'typing==3.6.4',
+        'youtube_dl==2016.12.1',
+        'python_vlc==3.0.101',
+        'setuptools==38.4.0',
+        'tinytag==0.18.0',
+        'grpcio==1.8.4',
+        'grpcio-tools==1.8.4',
+        'protobuf==3.5.1',
+        'mutagen==1.40.0',
     ],
-    'packages': ['mpserver'],
+    'packages': find_packages(exclude=['docs', 'tests']),
 }
 
 setup(**config)

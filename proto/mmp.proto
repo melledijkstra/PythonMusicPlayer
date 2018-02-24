@@ -1,0 +1,220 @@
+syntax = "proto3";
+
+package grpc;
+
+option java_multiple_files = true;
+option java_package = "nl.melledijkstra.musicplayerclient.grpc";
+option java_outer_classname = "MelonMusicProto";
+
+/*
+ * H1. Model information
+ * H2. Music Player RPC calls
+ * H3. Data Management RPC calls
+ * H4. Media Downloader RPC calls
+ * H5. Server information RPC calls
+ * H6. Service Definition
+ */
+
+enum MediaType {
+    ALBUM = 0;
+    SONG = 1;
+}
+
+//
+// H1. MODEL INFORMATION
+//
+
+message Song {
+    int64 id = 1;
+    int64 album_id = 2;
+    string title = 3;
+    int64 duration = 4; // duration in seconds
+}
+
+message Album {
+    int64 id = 1;
+    string title = 2;
+    repeated Song song_list = 3;
+    bytes cover = 4;
+}
+
+// Abstract message which just uses an ID
+message MediaData {
+    MediaType type = 1;
+    int64 id = 2;
+}
+
+//
+// H2. Music Player RPC calls
+//
+
+// H2.1 Request Data
+
+message MMPStatusRequest {}
+
+message MediaControl {
+    enum State {
+        PLAY = 0;
+        PAUSE = 1;
+        STOP = 2;
+    }
+    State state = 1;
+    // Song ID is only used with play state
+    int64 song_id = 2;
+}
+
+message PlaybackControl {}
+
+message VolumeControl {
+    bool mute = 1; // mute (1) or unmute (0)
+    sint32 volume_level = 2; // amount to increase or reduce the volume
+}
+
+message PositionControl {
+    int32 position = 1;
+}
+
+// H2.2 Responses
+
+message AlbumList {
+    repeated Album album_list = 1;
+    MMPResponse info = 2;
+}
+
+message SongList {
+    int32 album_id = 1;
+    repeated Song song_list = 2;
+    MMPResponse info = 3;
+}
+
+// Status information
+message MMPStatus {
+    // States of VLC player
+    enum State {
+        BUFFERING = 0;
+        PLAYING = 1;
+        ENDED = 2;
+        ERROR = 3;
+        NOTHINGSPECIAL = 4;
+        OPENING = 5;
+        PAUSED = 6;
+        STOPPED = 7;
+    }
+    State state = 1;
+    Song current_song = 2; // song id of currently playing song
+    int64 position = 3;
+    int32 volume = 4; // current volume level
+    bool mute = 5; // 1 if muted, if not 0
+    int64 elapsed_time = 6; // the time elapsed in seconds
+}
+
+//
+// H3. Data Management RPC calls
+//
+
+// H3.1 Request Data
+
+// Rename album or song
+message RenameData {
+    int64 id = 2;
+    string new_title = 3;
+}
+
+// Move song from one album to another
+message MoveData {
+    int64 song_id = 1;
+    int64 album_id = 2; // ID of the new album
+}
+
+//
+// H4. Media Downloader RPC calls
+//
+
+// H4.1 Request Data
+
+message MDStatusRequest {}
+
+message MediaDownload {
+    string media_url = 1;
+    int64 album_id = 2;
+}
+
+// H4.2 Responses
+
+message DownloadStatus {
+    int64 id = 1;
+    int32 progress = 2;
+}
+
+message MDStatus {
+    repeated DownloadStatus downloads = 1;
+}
+
+//
+// H5. Server information RPC calls
+//
+
+// TODO: implement server RPC calls
+
+//
+// H6. Service Definition
+//
+
+// Generic server response
+message MMPResponse {
+    // different types of results from the server
+    enum Result {
+        OK = 0;
+        ERROR = 1;
+    }
+    Result result = 1; // result type to check if action was correctly executed
+    string message = 2; // message which can be displayed to user
+    string error = 3; // error message with more in-depth info about what happened, use this as developer
+}
+
+service MusicPlayer {
+    //
+    // Media Player rpc calls
+    //
+    // Retrieve a list of data, (eg. albums, songs)
+    rpc RetrieveAlbumList (MediaData) returns (AlbumList);
+    rpc RetrieveSongList (MediaData) returns (SongList);
+
+    // Playback
+    rpc Play (MediaControl) returns (MMPResponse);
+    rpc ChangeVolume (VolumeControl) returns (MMPResponse);
+    rpc ChangePosition (PositionControl) returns (MMPResponse);
+    // Queue manipulation
+    rpc Previous (PlaybackControl) returns (MMPResponse);
+    rpc Next (PlaybackControl) returns (MMPResponse);
+    rpc AddNext (MediaData) returns (MMPResponse);
+    rpc AddToQueue (MediaData) returns (MMPResponse);
+
+    rpc RetrieveMMPStatus (MMPStatusRequest) returns (MMPStatus);
+    // special register RPC call, clients can make this request (register) and keep receiving updates (when available)
+    rpc RegisterMMPNotify (MMPStatusRequest) returns (stream MMPStatus);
+}
+
+service DataManager {
+    //
+    // Data Management RPC calls
+    //
+    // TODO: DeleteAlbum, DeleteSong and RenameAlbum, RenameSong can merged to single call
+    rpc DeleteAlbum (MediaData) returns (MMPResponse);
+    rpc DeleteSong (MediaData) returns (MMPResponse);
+    rpc RenameAlbum (RenameData) returns (MMPResponse);
+    rpc RenameSong (RenameData) returns (MMPResponse);
+    rpc MoveSong (MoveData) returns (MMPResponse);
+}
+
+service MediaDownloader {
+    //
+    // Media Downloader RPC Calls
+    //
+    // This call downloads the specified media
+    rpc DownloadMedia (MediaDownload) returns (DownloadStatus);
+    // Get the status of the downloader
+    rpc RetrieveMDStatus (MDStatusRequest) returns (MDStatus);
+    // special register RPC call, clients can make this request (register) and keep receiving updates (when available)
+    rpc NotifyMDStatus (MDStatusRequest) returns (stream MDStatus);
+}
