@@ -7,7 +7,9 @@
 
 ## Introduction
 
-This repository contains a python music player which acts as a server. It uses the vlc python bindings to play the music and socket communication to communicate with the Android Application which can be found [here](https://github.com/MelleDijkstra/AndroidMusicPlayerClient)
+This repository contains a python music player which acts as a server. 
+It uses the vlc python bindings to play the music and gRPC communication to communicate 
+with the Android Application which can be found [here](https://github.com/MelleDijkstra/AndroidMusicPlayerClient)
 
 ## Installation
 
@@ -58,6 +60,8 @@ run the following instructions:
   if you downloaded the source, there should be a `client.py`. Run this in another terminal/process to test the server.
   The client has quite some functionality but I will not be maintaining them. For full experience use one of the controllers
   like the [Android App](https://github.com/MelleDijkstra/AndroidMusicPlayerClient).
+
+[![forthebadge made-with-python](http://ForTheBadge.com/images/badges/made-with-python.svg)](https://www.python.org/)
 
 ### TODO
 (only server related tasks)
