@@ -3,7 +3,7 @@ try:
 except ImportError as e:
     from distutils.core import setup
 
-__version__ = "3.post1"
+__version__ = "3.0.0-alpha"
 
 config = {
     'name': 'melon-music-player',
