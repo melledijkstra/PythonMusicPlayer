@@ -1,5 +1,17 @@
 language: python
 python:
   - "3.6"
+
+cache: pip
+
+# Additional 'apt-get install' packages
+addons:
+  apt:
+    packages:
+      - vlc
+
+install:
+  - pip install -r requirements.txt
+
 script:
-  - pytest
+  - cd tests && python -m unittest discover
