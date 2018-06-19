@@ -1,14 +1,13 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import os
-import sys
 from configparser import RawConfigParser
 from datetime import datetime
 
+from mpserver.config import __version__
 from mpserver.musicserver import MusicServer
 from mpserver.tools import Colors
 from mpserver.tools import colorstring as c
-from mpserver.config import __version__
 
 # TODO: let user select config file from cmd argument
 inifile = 'config.ini'
@@ -23,12 +22,6 @@ banner = c("\n"
 if __name__ == '__main__':
     # Check if program is run with root privileges, which is needed for socket communication
     try:
-        if hasattr(os, 'getuid') and not os.getuid() == 0:
-            sys.exit(
-                c(
-                    "root priveleges needed for the server, try restarting with this command: 'sudo python " + __file__ + "'",
-                    Colors.WARNING))
-
         print(banner)
 
         # Get configuration for the application
