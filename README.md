@@ -1,4 +1,4 @@
-# Python Music Player
+# Python Music Server
 [![GitHub license](https://img.shields.io/github/license/MelleDijkstra/PythonMusicPlayer.svg)](https://github.com/MelleDijkstra/PythonMusicPlayer/blob/master/LICENSE)
 [![PyPI version](https://badge.fury.io/py/melon-music-player.svg)](https://badge.fury.io/py/melon-music-player)
 [![Documentation Status](https://readthedocs.org/projects/pythonmusicplayer/badge/?version=latest)](http://pythonmusicplayer.readthedocs.io/en/latest/?badge=latest)
