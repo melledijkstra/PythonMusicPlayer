@@ -30,7 +30,7 @@ config = {
         'tinytag==0.18.0',
         'grpcio==1.8.4',
         'grpcio-tools==1.8.4',
-        'protobuf==3.15.0',
+        'protobuf==3.18.3',
         'mutagen==1.40.0',
     ],
     'packages': find_packages(exclude=['docs', 'tests']),
