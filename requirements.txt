@@ -1,7 +1,7 @@
 typing==3.6.4
 youtube_dl==2016.12.1
 python_vlc==3.0.101
-setuptools==38.4.0
+setuptools==65.5.1
 tinytag==0.18.0
 grpcio==1.8.4
 grpcio-tools==1.8.4
