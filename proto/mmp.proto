@@ -25,14 +25,14 @@ enum MediaType {
 //
 
 message Song {
-    int64 id = 1;
-    int64 album_id = 2;
+    uint64 id = 1;
+    uint64 album_id = 2;
     string title = 3;
-    int64 duration = 4; // duration in seconds
+    uint64 duration = 4; // duration in seconds
 }
 
 message Album {
-    int64 id = 1;
+    uint64 id = 1;
     string title = 2;
     repeated Song song_list = 3;
     bytes cover = 4;
@@ -41,7 +41,7 @@ message Album {
 // Abstract message which just uses an ID
 message MediaData {
     MediaType type = 1;
-    int64 id = 2;
+    uint64 id = 2;
 }
 
 //
@@ -60,7 +60,7 @@ message MediaControl {
     }
     State state = 1;
     // Song ID is only used with play state
-    int64 song_id = 2;
+    uint64 song_id = 2;
 }
 
 message PlaybackControl {}
@@ -71,7 +71,7 @@ message VolumeControl {
 }
 
 message PositionControl {
-    int32 position = 1;
+    uint32 position = 1;
 }
 
 // H2.2 Responses
@@ -82,7 +82,7 @@ message AlbumList {
 }
 
 message SongList {
-    int32 album_id = 1;
+    uint64 album_id = 1;
     repeated Song song_list = 2;
     MMPResponse info = 3;
 }
@@ -103,7 +103,7 @@ message MMPStatus {
     State state = 1;
     Song current_song = 2; // song id of currently playing song
     int64 position = 3;
-    int32 volume = 4; // current volume level
+    uint32 volume = 4; // current volume level
     bool mute = 5; // 1 if muted, if not 0
     int64 elapsed_time = 6; // the time elapsed in seconds
 }
@@ -116,14 +116,14 @@ message MMPStatus {
 
 // Rename album or song
 message RenameData {
-    int64 id = 2;
+    uint64 id = 2;
     string new_title = 3;
 }
 
 // Move song from one album to another
 message MoveData {
-    int64 song_id = 1;
-    int64 album_id = 2; // ID of the new album
+    uint64 song_id = 1;
+    uint64 album_id = 2; // ID of the new album
 }
 
 //
@@ -136,14 +136,14 @@ message MDStatusRequest {}
 
 message MediaDownload {
     string media_url = 1;
-    int64 album_id = 2;
+    uint64 album_id = 2;
 }
 
 // H4.2 Responses
 
 message DownloadStatus {
-    int64 id = 1;
-    int32 progress = 2;
+    uint64 id = 1;
+    uint32 progress = 2;
 }
 
 message MDStatus {

@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='mmp.proto',
   package='grpc',
   syntax='proto3',
-  serialized_pb=_b('\n\tmmp.proto\x12\x04grpc\"E\n\x04Song\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x10\n\x08\x61lbum_id\x18\x02 \x01(\x03\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08\x64uration\x18\x04 \x01(\x03\"P\n\x05\x41lbum\x12\n\n\x02id\x18\x01 \x01(\x03\x12\r\n\x05title\x18\x02 \x01(\t\x12\x1d\n\tsong_list\x18\x03 \x03(\x0b\x32\n.grpc.Song\x12\r\n\x05\x63over\x18\x04 \x01(\x0c\"6\n\tMediaData\x12\x1d\n\x04type\x18\x01 \x01(\x0e\x32\x0f.grpc.MediaType\x12\n\n\x02id\x18\x02 \x01(\x03\"\x12\n\x10MMPStatusRequest\"p\n\x0cMediaControl\x12\'\n\x05state\x18\x01 \x01(\x0e\x32\x18.grpc.MediaControl.State\x12\x0f\n\x07song_id\x18\x02 \x01(\x03\"&\n\x05State\x12\x08\n\x04PLAY\x10\x00\x12\t\n\x05PAUSE\x10\x01\x12\x08\n\x04STOP\x10\x02\"\x11\n\x0fPlaybackControl\"3\n\rVolumeControl\x12\x0c\n\x04mute\x18\x01 \x01(\x08\x12\x14\n\x0cvolume_level\x18\x02 \x01(\x11\"#\n\x0fPositionControl\x12\x10\n\x08position\x18\x01 \x01(\x05\"M\n\tAlbumList\x12\x1f\n\nalbum_list\x18\x01 \x03(\x0b\x32\x0b.grpc.Album\x12\x1f\n\x04info\x18\x02 \x01(\x0b\x32\x11.grpc.MMPResponse\"\\\n\x08SongList\x12\x10\n\x08\x61lbum_id\x18\x01 \x01(\x05\x12\x1d\n\tsong_list\x18\x02 \x03(\x0b\x32\n.grpc.Song\x12\x1f\n\x04info\x18\x03 \x01(\x0b\x32\x11.grpc.MMPResponse\"\x8e\x02\n\tMMPStatus\x12$\n\x05state\x18\x01 \x01(\x0e\x32\x15.grpc.MMPStatus.State\x12 \n\x0c\x63urrent_song\x18\x02 \x01(\x0b\x32\n.grpc.Song\x12\x10\n\x08position\x18\x03 \x01(\x03\x12\x0e\n\x06volume\x18\x04 \x01(\x05\x12\x0c\n\x04mute\x18\x05 \x01(\x08\x12\x14\n\x0c\x65lapsed_time\x18\x06 \x01(\x03\"s\n\x05State\x12\r\n\tBUFFERING\x10\x00\x12\x0b\n\x07PLAYING\x10\x01\x12\t\n\x05\x45NDED\x10\x02\x12\t\n\x05\x45RROR\x10\x03\x12\x12\n\x0eNOTHINGSPECIAL\x10\x04\x12\x0b\n\x07OPENING\x10\x05\x12\n\n\x06PAUSED\x10\x06\x12\x0b\n\x07STOPPED\x10\x07\"+\n\nRenameData\x12\n\n\x02id\x18\x02 \x01(\x03\x12\x11\n\tnew_title\x18\x03 \x01(\t\"-\n\x08MoveData\x12\x0f\n\x07song_id\x18\x01 \x01(\x03\x12\x10\n\x08\x61lbum_id\x18\x02 \x01(\x03\"\x11\n\x0fMDStatusRequest\"4\n\rMediaDownload\x12\x11\n\tmedia_url\x18\x01 \x01(\t\x12\x10\n\x08\x61lbum_id\x18\x02 \x01(\x03\".\n\x0e\x44ownloadStatus\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x10\n\x08progress\x18\x02 \x01(\x05\"3\n\x08MDStatus\x12\'\n\tdownloads\x18\x01 \x03(\x0b\x32\x14.grpc.DownloadStatus\"t\n\x0bMMPResponse\x12(\n\x06result\x18\x01 \x01(\x0e\x32\x18.grpc.MMPResponse.Result\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\r\n\x05\x65rror\x18\x03 \x01(\t\"\x1b\n\x06Result\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01* \n\tMediaType\x12\t\n\x05\x41LBUM\x10\x00\x12\x08\n\x04SONG\x10\x01\x32\xe3\x04\n\x0bMusicPlayer\x12\x35\n\x11RetrieveAlbumList\x12\x0f.grpc.MediaData\x1a\x0f.grpc.AlbumList\x12\x33\n\x10RetrieveSongList\x12\x0f.grpc.MediaData\x1a\x0e.grpc.SongList\x12-\n\x04Play\x12\x12.grpc.MediaControl\x1a\x11.grpc.MMPResponse\x12\x36\n\x0c\x43hangeVolume\x12\x13.grpc.VolumeControl\x1a\x11.grpc.MMPResponse\x12:\n\x0e\x43hangePosition\x12\x15.grpc.PositionControl\x1a\x11.grpc.MMPResponse\x12\x34\n\x08Previous\x12\x15.grpc.PlaybackControl\x1a\x11.grpc.MMPResponse\x12\x30\n\x04Next\x12\x15.grpc.PlaybackControl\x1a\x11.grpc.MMPResponse\x12-\n\x07\x41\x64\x64Next\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12\x30\n\nAddToQueue\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12<\n\x11RetrieveMMPStatus\x12\x16.grpc.MMPStatusRequest\x1a\x0f.grpc.MMPStatus\x12>\n\x11RegisterMMPNotify\x12\x16.grpc.MMPStatusRequest\x1a\x0f.grpc.MMPStatus0\x01\x32\x88\x02\n\x0b\x44\x61taManager\x12\x31\n\x0b\x44\x65leteAlbum\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12\x30\n\nDeleteSong\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12\x32\n\x0bRenameAlbum\x12\x10.grpc.RenameData\x1a\x11.grpc.MMPResponse\x12\x31\n\nRenameSong\x12\x10.grpc.RenameData\x1a\x11.grpc.MMPResponse\x12-\n\x08MoveSong\x12\x0e.grpc.MoveData\x1a\x11.grpc.MMPResponse2\xc3\x01\n\x0fMediaDownloader\x12:\n\rDownloadMedia\x12\x13.grpc.MediaDownload\x1a\x14.grpc.DownloadStatus\x12\x39\n\x10RetrieveMDStatus\x12\x15.grpc.MDStatusRequest\x1a\x0e.grpc.MDStatus\x12\x39\n\x0eNotifyMDStatus\x12\x15.grpc.MDStatusRequest\x1a\x0e.grpc.MDStatus0\x01\x42<\n\'nl.melledijkstra.musicplayerclient.grpcB\x0fMelonMusicProtoP\x01\x62\x06proto3')
+  serialized_pb=_b('\n\tmmp.proto\x12\x04grpc\"E\n\x04Song\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x10\n\x08\x61lbum_id\x18\x02 \x01(\x04\x12\r\n\x05title\x18\x03 \x01(\t\x12\x10\n\x08\x64uration\x18\x04 \x01(\x04\"P\n\x05\x41lbum\x12\n\n\x02id\x18\x01 \x01(\x04\x12\r\n\x05title\x18\x02 \x01(\t\x12\x1d\n\tsong_list\x18\x03 \x03(\x0b\x32\n.grpc.Song\x12\r\n\x05\x63over\x18\x04 \x01(\x0c\"6\n\tMediaData\x12\x1d\n\x04type\x18\x01 \x01(\x0e\x32\x0f.grpc.MediaType\x12\n\n\x02id\x18\x02 \x01(\x04\"\x12\n\x10MMPStatusRequest\"p\n\x0cMediaControl\x12\'\n\x05state\x18\x01 \x01(\x0e\x32\x18.grpc.MediaControl.State\x12\x0f\n\x07song_id\x18\x02 \x01(\x04\"&\n\x05State\x12\x08\n\x04PLAY\x10\x00\x12\t\n\x05PAUSE\x10\x01\x12\x08\n\x04STOP\x10\x02\"\x11\n\x0fPlaybackControl\"3\n\rVolumeControl\x12\x0c\n\x04mute\x18\x01 \x01(\x08\x12\x14\n\x0cvolume_level\x18\x02 \x01(\x11\"#\n\x0fPositionControl\x12\x10\n\x08position\x18\x01 \x01(\r\"M\n\tAlbumList\x12\x1f\n\nalbum_list\x18\x01 \x03(\x0b\x32\x0b.grpc.Album\x12\x1f\n\x04info\x18\x02 \x01(\x0b\x32\x11.grpc.MMPResponse\"\\\n\x08SongList\x12\x10\n\x08\x61lbum_id\x18\x01 \x01(\x04\x12\x1d\n\tsong_list\x18\x02 \x03(\x0b\x32\n.grpc.Song\x12\x1f\n\x04info\x18\x03 \x01(\x0b\x32\x11.grpc.MMPResponse\"\x8e\x02\n\tMMPStatus\x12$\n\x05state\x18\x01 \x01(\x0e\x32\x15.grpc.MMPStatus.State\x12 \n\x0c\x63urrent_song\x18\x02 \x01(\x0b\x32\n.grpc.Song\x12\x10\n\x08position\x18\x03 \x01(\x03\x12\x0e\n\x06volume\x18\x04 \x01(\r\x12\x0c\n\x04mute\x18\x05 \x01(\x08\x12\x14\n\x0c\x65lapsed_time\x18\x06 \x01(\x03\"s\n\x05State\x12\r\n\tBUFFERING\x10\x00\x12\x0b\n\x07PLAYING\x10\x01\x12\t\n\x05\x45NDED\x10\x02\x12\t\n\x05\x45RROR\x10\x03\x12\x12\n\x0eNOTHINGSPECIAL\x10\x04\x12\x0b\n\x07OPENING\x10\x05\x12\n\n\x06PAUSED\x10\x06\x12\x0b\n\x07STOPPED\x10\x07\"+\n\nRenameData\x12\n\n\x02id\x18\x02 \x01(\x04\x12\x11\n\tnew_title\x18\x03 \x01(\t\"-\n\x08MoveData\x12\x0f\n\x07song_id\x18\x01 \x01(\x04\x12\x10\n\x08\x61lbum_id\x18\x02 \x01(\x04\"\x11\n\x0fMDStatusRequest\"4\n\rMediaDownload\x12\x11\n\tmedia_url\x18\x01 \x01(\t\x12\x10\n\x08\x61lbum_id\x18\x02 \x01(\x04\".\n\x0e\x44ownloadStatus\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x10\n\x08progress\x18\x02 \x01(\r\"3\n\x08MDStatus\x12\'\n\tdownloads\x18\x01 \x03(\x0b\x32\x14.grpc.DownloadStatus\"t\n\x0bMMPResponse\x12(\n\x06result\x18\x01 \x01(\x0e\x32\x18.grpc.MMPResponse.Result\x12\x0f\n\x07message\x18\x02 \x01(\t\x12\r\n\x05\x65rror\x18\x03 \x01(\t\"\x1b\n\x06Result\x12\x06\n\x02OK\x10\x00\x12\t\n\x05\x45RROR\x10\x01* \n\tMediaType\x12\t\n\x05\x41LBUM\x10\x00\x12\x08\n\x04SONG\x10\x01\x32\xe3\x04\n\x0bMusicPlayer\x12\x35\n\x11RetrieveAlbumList\x12\x0f.grpc.MediaData\x1a\x0f.grpc.AlbumList\x12\x33\n\x10RetrieveSongList\x12\x0f.grpc.MediaData\x1a\x0e.grpc.SongList\x12-\n\x04Play\x12\x12.grpc.MediaControl\x1a\x11.grpc.MMPResponse\x12\x36\n\x0c\x43hangeVolume\x12\x13.grpc.VolumeControl\x1a\x11.grpc.MMPResponse\x12:\n\x0e\x43hangePosition\x12\x15.grpc.PositionControl\x1a\x11.grpc.MMPResponse\x12\x34\n\x08Previous\x12\x15.grpc.PlaybackControl\x1a\x11.grpc.MMPResponse\x12\x30\n\x04Next\x12\x15.grpc.PlaybackControl\x1a\x11.grpc.MMPResponse\x12-\n\x07\x41\x64\x64Next\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12\x30\n\nAddToQueue\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12<\n\x11RetrieveMMPStatus\x12\x16.grpc.MMPStatusRequest\x1a\x0f.grpc.MMPStatus\x12>\n\x11RegisterMMPNotify\x12\x16.grpc.MMPStatusRequest\x1a\x0f.grpc.MMPStatus0\x01\x32\x88\x02\n\x0b\x44\x61taManager\x12\x31\n\x0b\x44\x65leteAlbum\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12\x30\n\nDeleteSong\x12\x0f.grpc.MediaData\x1a\x11.grpc.MMPResponse\x12\x32\n\x0bRenameAlbum\x12\x10.grpc.RenameData\x1a\x11.grpc.MMPResponse\x12\x31\n\nRenameSong\x12\x10.grpc.RenameData\x1a\x11.grpc.MMPResponse\x12-\n\x08MoveSong\x12\x0e.grpc.MoveData\x1a\x11.grpc.MMPResponse2\xc3\x01\n\x0fMediaDownloader\x12:\n\rDownloadMedia\x12\x13.grpc.MediaDownload\x1a\x14.grpc.DownloadStatus\x12\x39\n\x10RetrieveMDStatus\x12\x15.grpc.MDStatusRequest\x1a\x0e.grpc.MDStatus\x12\x39\n\x0eNotifyMDStatus\x12\x15.grpc.MDStatusRequest\x1a\x0e.grpc.MDStatus0\x01\x42<\n\'nl.melledijkstra.musicplayerclient.grpcB\x0fMelonMusicProtoP\x01\x62\x06proto3')
 )
 
 _MEDIATYPE = _descriptor.EnumDescriptor(
@@ -154,14 +154,14 @@ _SONG = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='id', full_name='grpc.Song.id', index=0,
-      number=1, type=3, cpp_type=2, label=1,
+      number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='album_id', full_name='grpc.Song.album_id', index=1,
-      number=2, type=3, cpp_type=2, label=1,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -175,7 +175,7 @@ _SONG = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='duration', full_name='grpc.Song.duration', index=3,
-      number=4, type=3, cpp_type=2, label=1,
+      number=4, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -206,7 +206,7 @@ _ALBUM = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='id', full_name='grpc.Album.id', index=0,
-      number=1, type=3, cpp_type=2, label=1,
+      number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -265,7 +265,7 @@ _MEDIADATA = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='id', full_name='grpc.MediaData.id', index=1,
-      number=2, type=3, cpp_type=2, label=1,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -327,7 +327,7 @@ _MEDIACONTROL = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='song_id', full_name='grpc.MediaControl.song_id', index=1,
-      number=2, type=3, cpp_type=2, label=1,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -421,7 +421,7 @@ _POSITIONCONTROL = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='position', full_name='grpc.PositionControl.position', index=0,
-      number=1, type=5, cpp_type=1, label=1,
+      number=1, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -490,7 +490,7 @@ _SONGLIST = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='album_id', full_name='grpc.SongList.album_id', index=0,
-      number=1, type=5, cpp_type=1, label=1,
+      number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -556,7 +556,7 @@ _MMPSTATUS = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='volume', full_name='grpc.MMPStatus.volume', index=3,
-      number=4, type=5, cpp_type=1, label=1,
+      number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -602,7 +602,7 @@ _RENAMEDATA = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='id', full_name='grpc.RenameData.id', index=0,
-      number=2, type=3, cpp_type=2, label=1,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -640,14 +640,14 @@ _MOVEDATA = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='song_id', full_name='grpc.MoveData.song_id', index=0,
-      number=1, type=3, cpp_type=2, label=1,
+      number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='album_id', full_name='grpc.MoveData.album_id', index=1,
-      number=2, type=3, cpp_type=2, label=1,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -709,7 +709,7 @@ _MEDIADOWNLOAD = _descriptor.Descriptor(
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='album_id', full_name='grpc.MediaDownload.album_id', index=1,
-      number=2, type=3, cpp_type=2, label=1,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -740,14 +740,14 @@ _DOWNLOADSTATUS = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='id', full_name='grpc.DownloadStatus.id', index=0,
-      number=1, type=3, cpp_type=2, label=1,
+      number=1, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='progress', full_name='grpc.DownloadStatus.progress', index=1,
-      number=2, type=5, cpp_type=1, label=1,
+      number=2, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
